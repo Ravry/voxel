@@ -63,4 +63,21 @@ namespace Voxel {
         glVertexAttribPointer(index, size, type, normalized, stride, pointer);
         glEnableVertexAttribArray(index);
     }
+
+    SSBO::SSBO() {
+        glGenBuffers(1, &id);
+    }
+
+    void SSBO::bind() const {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, id);
+    }
+
+    void SSBO::unbind() const {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    }
+
+    void SSBO::data(unsigned int index, unsigned int *data, size_t data_size) {
+        glBufferData(GL_SHADER_STORAGE_BUFFER, data_size, data, GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, id);
+    }
 }

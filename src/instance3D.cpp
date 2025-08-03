@@ -40,7 +40,7 @@ namespace Voxel {
         std::vector<float> vertices;
         std::vector<unsigned int> indices;
 
-        vertices.reserve(size * size * 8 * 20);
+        vertices.reserve(size * size * 8 * 32);
         indices.reserve(size * size * 8 * 6);
 
         auto start = std::chrono::high_resolution_clock::now();
@@ -142,25 +142,31 @@ namespace Voxel {
 
                         size_t old_v_size = vertices.size();
                         size_t old_i_size = indices.size();
-                        vertices.resize(old_v_size + 20);
+                        vertices.resize(old_v_size + 32);
                         indices.resize(old_i_size + 6);
 
                         float* vertex_ptr = vertices.data() + old_v_size;
                         unsigned int* index_ptr = indices.data() + old_i_size;
 
-                        float z0f = (float)z - 0.5f;
-                        float z1f = (float)(z + width) - .5f;
-                        float x0f = (float)x0 - 0.5f;
-                        float x1f = (float)(x0 + height) - 0.5f;
-                        float y0f = (float)y + 0.5f;
+                        float z0f = (float)z;
+                        float z1f = (float)(z + width);
+                        float x0f = (float)x0;
+                        float x1f = (float)(x0 + height);
+                        float y0f = (float)y;
 
-                        if (i == 1)
-                            y0f -= 1.f;
+                        float norm_x = 0;
+                        float norm_y = -1;
+                        float norm_z = 0;
 
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = 0.f; *vertex_ptr++ = 0.f;
-                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = height; *vertex_ptr++ = 0.f;
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z1f;     *vertex_ptr++ = 0.f; *vertex_ptr++ = width;
-                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z1f;     *vertex_ptr++ = height; *vertex_ptr++ = width;
+                        if (i == 0) {
+                            y0f += 1.f;
+                            norm_y = 1;
+                        }
+
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = norm_x;  *vertex_ptr++ = norm_y; *vertex_ptr++ = norm_z;     *vertex_ptr++ = 0.f; *vertex_ptr++ = 0.f;
+                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = norm_x;  *vertex_ptr++ = norm_y; *vertex_ptr++ = norm_z;     *vertex_ptr++ = height; *vertex_ptr++ = 0.f;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z1f;     *vertex_ptr++ = norm_x;  *vertex_ptr++ = norm_y; *vertex_ptr++ = norm_z;     *vertex_ptr++ = 0.f; *vertex_ptr++ = width;
+                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z1f;     *vertex_ptr++ = norm_x;  *vertex_ptr++ = norm_y; *vertex_ptr++ = norm_z;     *vertex_ptr++ = height; *vertex_ptr++ = width;
 
                         *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
                         *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
@@ -171,7 +177,6 @@ namespace Voxel {
             }
         }
         #pragma endregion
-
 
         #pragma region left_and_right_faces
         for (size_t z {0}; z < size; z++)
@@ -203,26 +208,31 @@ namespace Voxel {
 
                         size_t old_v_size = vertices.size();
                         size_t old_i_size = indices.size();
-                        vertices.resize(old_v_size + 20);
+                        vertices.resize(old_v_size + 32);
                         indices.resize(old_i_size + 6);
 
                         float* vertex_ptr = vertices.data() + old_v_size;
                         unsigned int* index_ptr = indices.data() + old_i_size;
 
-                        float z0f = (float)z - 0.5f;
-                        float x0f = (float)x - 0.5f;
-                        float x1f = (float)(x + width) - 0.5f;
-                        float y0f = (float)y0 - 0.5f;
-                        float y1f = (float)(y0 + height) - 0.5f;
+                        float z0f = (float)z;
+                        float x0f = (float)x;
+                        float x1f = (float)(x + width);
+                        float y0f = (float)y0;
+                        float y1f = (float)(y0 + height);
+
+                        float norm_x = 0;
+                        float norm_y = 0;
+                        float norm_z = -1;
 
                         if (i == 4) {
                             z0f += 1.f;
+                            norm_z = 1;
                         }
 
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = 0.f; *vertex_ptr++ = 0.f;
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;     *vertex_ptr++ = height; *vertex_ptr++ = 0.f;
-                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = 0.f; *vertex_ptr++ = width;
-                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;     *vertex_ptr++ = height; *vertex_ptr++ = width;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = norm_x;  *vertex_ptr++ = norm_y; *vertex_ptr++ = norm_z;    *vertex_ptr++ = 0.f; *vertex_ptr++ = 0.f;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;     *vertex_ptr++ = norm_x;  *vertex_ptr++ = norm_y; *vertex_ptr++ = norm_z;    *vertex_ptr++ = height; *vertex_ptr++ = 0.f;
+                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = norm_x;  *vertex_ptr++ = norm_y; *vertex_ptr++ = norm_z;    *vertex_ptr++ = 0.f; *vertex_ptr++ = width;
+                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;     *vertex_ptr++ = norm_x;  *vertex_ptr++ = norm_y; *vertex_ptr++ = norm_z;    *vertex_ptr++ = height; *vertex_ptr++ = width;
 
                         *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
                         *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
@@ -233,6 +243,7 @@ namespace Voxel {
             }
         }
         #pragma endregion
+
         #pragma region front_and_back_faces
         for (size_t z {0}; z < size; z++)
         {
@@ -263,25 +274,32 @@ namespace Voxel {
 
                         size_t old_v_size = vertices.size();
                         size_t old_i_size = indices.size();
-                        vertices.resize(old_v_size + 20);
+                        vertices.resize(old_v_size + 32);
                         indices.resize(old_i_size + 6);
 
                         float* vertex_ptr = vertices.data() + old_v_size;
                         unsigned int* index_ptr = indices.data() + old_i_size;
 
-                        float z0f = (float)z - 0.5f;
-                        float z1f = (float)(z + width) - 0.5f;
-                        float x0f = (float)x + 0.5f;
-                        float y0f = (float)y0 - 0.5f;
-                        float y1f = (float)(y0 + height) - 0.5f;
+                        float z0f = (float)z;
+                        float z1f = (float)(z + width);
+                        float x0f = (float)x;
+                        float y0f = (float)y0;
+                        float y1f = (float)(y0 + height);
 
-                        if (i == 3)
-                            x0f -= 1.f;
 
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = 0.f; *vertex_ptr++ = 0.f;
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;     *vertex_ptr++ = height; *vertex_ptr++ = 0.f;
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z1f;     *vertex_ptr++ = 0.f; *vertex_ptr++ = width;
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z1f;     *vertex_ptr++ = height; *vertex_ptr++ = width;
+                        float norm_x = -1;
+                        float norm_y = 0;
+                        float norm_z = -1;
+
+                        if (i == 2) {
+                            x0f += 1.f;
+                            norm_x = 1;
+                        }
+
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = norm_x;  *vertex_ptr++ = norm_y; *vertex_ptr++ = norm_z;    *vertex_ptr++ = 0.f; *vertex_ptr++ = 0.f;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;     *vertex_ptr++ = norm_x;  *vertex_ptr++ = norm_y; *vertex_ptr++ = norm_z;    *vertex_ptr++ = height; *vertex_ptr++ = 0.f;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z1f;     *vertex_ptr++ = norm_x;  *vertex_ptr++ = norm_y; *vertex_ptr++ = norm_z;    *vertex_ptr++ = 0.f; *vertex_ptr++ = width;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z1f;     *vertex_ptr++ = norm_x;  *vertex_ptr++ = norm_y; *vertex_ptr++ = norm_z;    *vertex_ptr++ = height; *vertex_ptr++ = width;
 
                         *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
                         *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
@@ -306,8 +324,9 @@ namespace Voxel {
         vbo.mapped_data(vertices.data(), vertices.size() * sizeof(float));
         ebo.data(indices.data(), indices.size() * sizeof(unsigned int));
 
-        vao.attrib(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        vao.attrib(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+        vao.attrib(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+        vao.attrib(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+        vao.attrib(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 
         vao.unbind();
         vbo.unbind();

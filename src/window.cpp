@@ -6,7 +6,8 @@
 #include "noise.h"
 #include "texture.h"
 
-namespace Voxel {    
+namespace Voxel {
+
     static Camera* camera {nullptr};
     static double delta_time {0};
     static bool debug {false};
@@ -145,7 +146,7 @@ namespace Voxel {
 
                     uint8_t noise_value =  noise.fetch(x, y, z);
                     if (noise_value)
-                        instances.push_back(Instance3D(&cube_mesh, glm::vec3((float)noise_value), glm::vec3(x, y, z), glm::vec3(.2f)));
+                        instances.push_back(Instance3D(&cube_mesh, glm::vec3((float)noise_value), glm::vec3(x + .5, y + .5, z + .5), glm::vec3(.2f)));
 
                     row1 |= noise_value << x;
                     row2 |= noise_value << z;
@@ -161,8 +162,31 @@ namespace Voxel {
         VAO vao;
         setup_axis_gizmo(vao);
 
-        Texture texture(ASSETS_DIR "textures/checkered.png");
+
+        Texture::TextureCreateInfo texture_create_info {
+            .target = GL_TEXTURE_2D_ARRAY,
+            .paths = { ASSETS_DIR "textures/checkered.png", ASSETS_DIR "textures/dirt.png" }
+        };
+
+        Texture texture(texture_create_info);
         texture.bind();
+
+
+
+
+        unsigned int data[8 * 8 * 8] {};
+        for (int y {0}; y < SIZE; y++) {
+            for (int z {0}; z < SIZE; z++) {
+                for (int x {0}; x < SIZE; x++) {
+                    data[x + (y * SIZE) + (z * SIZE * SIZE)] = y > 1 && y < 5 ? 1 : 0;
+                }
+            }
+        }
+
+        SSBO ssbo;
+        ssbo.bind();
+        ssbo.data(0, &data[0], sizeof(data));
+        ssbo.unbind();
 
         glLineWidth(2.f);
         glClearColor(.4f, .4f, 1.f, 1.f);

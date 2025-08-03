@@ -1,6 +1,19 @@
 #include "shader.h"
 
+#include <filesystem>
+
 namespace Voxel {
+
+    void check_status(unsigned int shader, GLenum pname) {
+        int success;
+        glGetShaderiv(shader, pname, &success);
+        if (!success) {
+            char info_log[512];
+            glGetShaderInfoLog(shader, 512, NULL, info_log);
+            std::cout << "ERROR::SHADER::COMPILATION_FAILED\n" << info_log << std::endl;
+        }
+    }
+
     void Shader::load(std::string_view vertex_shader_file, std::string_view fragment_shader_file) {
         std::string vertex_shader_source_str, fragment_shader_source_str;
         Utils::read_file_content(vertex_shader_file, vertex_shader_source_str);
@@ -12,15 +25,18 @@ namespace Voxel {
         unsigned int vertex_shader = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertex_shader, 1, &vertex_shader_source, 0);
         glCompileShader(vertex_shader);
+        check_status(vertex_shader, GL_COMPILE_STATUS);
 
         unsigned int fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(fragment_shader, 1, &fragment_shader_source, 0);
         glCompileShader(fragment_shader);
+        check_status(fragment_shader, GL_COMPILE_STATUS);
 
         id = glCreateProgram();
         glAttachShader(id, vertex_shader);
         glAttachShader(id, fragment_shader);
         glLinkProgram(id);
+        check_status(id, GL_LINK_STATUS);
 
         glDeleteShader(fragment_shader);
         glDeleteShader(vertex_shader);
