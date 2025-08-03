@@ -11,6 +11,7 @@ include_directories(${PROJECT_NAME} PRIVATE
     include
     vendor/glad/include
     vendor/glm/
+    vendor/stb/
 )
 
 find_package(glfw3 CONFIG REQUIRED)

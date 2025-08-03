@@ -22,6 +22,12 @@ namespace Voxel {
         glBufferData(GL_ARRAY_BUFFER, data_size, data, GL_STATIC_DRAW);
     }
 
+    void VBO::mapped_data(float* data, size_t data_size)
+    {
+        GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+        glBufferStorage(GL_ARRAY_BUFFER, data_size, data, flags);
+        buffer_memory_ptr = (float*)glMapBufferRange(GL_ARRAY_BUFFER, 0, data_size, flags);
+    }
 
     EBO::EBO() {
         glGenBuffers(1, &id);

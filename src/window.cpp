@@ -4,6 +4,7 @@
 #include "camera.h"
 #include "instance3D.h"
 #include "noise.h"
+#include "texture.h"
 
 namespace Voxel {    
     static Camera* camera {nullptr};
@@ -159,6 +160,9 @@ namespace Voxel {
 
         VAO vao;
         setup_axis_gizmo(vao);
+
+        Texture texture(ASSETS_DIR "textures/checkered.png");
+        texture.bind();
 
         glLineWidth(2.f);
         glClearColor(.4f, .4f, 1.f, 1.f);

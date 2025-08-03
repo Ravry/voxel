@@ -31,7 +31,8 @@ namespace Voxel {
         ebo.unbind();
     }
 
-    Mesh::Mesh(uint8_t* voxels, size_t size) {
+    Mesh::Mesh(uint8_t* voxels, size_t size)
+    {
         vao.bind();
         vbo.bind();
         ebo.bind();
@@ -39,9 +40,8 @@ namespace Voxel {
         std::vector<float> vertices;
         std::vector<unsigned int> indices;
 
-        vertices.reserve(size * size * 8 * 12);
+        vertices.reserve(size * size * 8 * 20);
         indices.reserve(size * size * 8 * 6);
-
 
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -110,9 +110,8 @@ namespace Voxel {
         };
         #pragma endregion
 
-
-
         #pragma region greedy_meshing
+        #pragma region vertical_faces
         for (size_t y {0}; y < size; y++)
         {
             for (size_t z {0}; z < size; z++)
@@ -143,7 +142,7 @@ namespace Voxel {
 
                         size_t old_v_size = vertices.size();
                         size_t old_i_size = indices.size();
-                        vertices.resize(old_v_size + 12);
+                        vertices.resize(old_v_size + 20);
                         indices.resize(old_i_size + 6);
 
                         float* vertex_ptr = vertices.data() + old_v_size;
@@ -158,10 +157,10 @@ namespace Voxel {
                         if (i == 1)
                             y0f -= 1.f;
 
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;
-                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z1f;
-                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z1f;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = 0.f; *vertex_ptr++ = 0.f;
+                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = height; *vertex_ptr++ = 0.f;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z1f;     *vertex_ptr++ = 0.f; *vertex_ptr++ = width;
+                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z1f;     *vertex_ptr++ = height; *vertex_ptr++ = width;
 
                         *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
                         *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
@@ -171,7 +170,10 @@ namespace Voxel {
                 }
             }
         }
+        #pragma endregion
 
+
+        #pragma region left_and_right_faces
         for (size_t z {0}; z < size; z++)
         {
             for (size_t x {0}; x < size; x++)
@@ -201,7 +203,7 @@ namespace Voxel {
 
                         size_t old_v_size = vertices.size();
                         size_t old_i_size = indices.size();
-                        vertices.resize(old_v_size + 12);
+                        vertices.resize(old_v_size + 20);
                         indices.resize(old_i_size + 6);
 
                         float* vertex_ptr = vertices.data() + old_v_size;
@@ -217,10 +219,10 @@ namespace Voxel {
                             z0f += 1.f;
                         }
 
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;
-                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;
-                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = 0.f; *vertex_ptr++ = 0.f;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;     *vertex_ptr++ = height; *vertex_ptr++ = 0.f;
+                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = 0.f; *vertex_ptr++ = width;
+                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;     *vertex_ptr++ = height; *vertex_ptr++ = width;
 
                         *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
                         *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
@@ -230,7 +232,8 @@ namespace Voxel {
                 }
             }
         }
-
+        #pragma endregion
+        #pragma region front_and_back_faces
         for (size_t z {0}; z < size; z++)
         {
             for (size_t x {0}; x < size; x++)
@@ -260,7 +263,7 @@ namespace Voxel {
 
                         size_t old_v_size = vertices.size();
                         size_t old_i_size = indices.size();
-                        vertices.resize(old_v_size + 12);
+                        vertices.resize(old_v_size + 20);
                         indices.resize(old_i_size + 6);
 
                         float* vertex_ptr = vertices.data() + old_v_size;
@@ -275,10 +278,10 @@ namespace Voxel {
                         if (i == 3)
                             x0f -= 1.f;
 
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z1f;
-                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z1f;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;     *vertex_ptr++ = 0.f; *vertex_ptr++ = 0.f;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;     *vertex_ptr++ = height; *vertex_ptr++ = 0.f;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z1f;     *vertex_ptr++ = 0.f; *vertex_ptr++ = width;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z1f;     *vertex_ptr++ = height; *vertex_ptr++ = width;
 
                         *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
                         *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
@@ -288,6 +291,9 @@ namespace Voxel {
                 }
             }
         }
+
+        #pragma endregion
+
         #pragma endregion
 
         auto end = std::chrono::high_resolution_clock::now();
@@ -297,10 +303,11 @@ namespace Voxel {
         triangles = indices.size();
         std::cout << "triangles: " << triangles / 3 << "\n";
 
-        vbo.data(vertices.data(), vertices.size() * sizeof(float));
+        vbo.mapped_data(vertices.data(), vertices.size() * sizeof(float));
         ebo.data(indices.data(), indices.size() * sizeof(unsigned int));
 
-        vao.attrib(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        vao.attrib(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        vao.attrib(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
         vao.unbind();
         vbo.unbind();

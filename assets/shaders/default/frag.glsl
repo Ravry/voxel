@@ -3,9 +3,10 @@
 out vec4 color;
 
 uniform vec3 albedo;
+uniform sampler2DArray texure_array;
 
-in vec3 pos_ws;
+in vec2 oUV;
 
 void main() {
-    color = vec4(mix((pos_ws.xyz / 8.0), albedo.xyz, albedo.x) , 1.0);
+    color = vec4(texture(texure_array, vec3(oUV, 0)).rgb, 1.0);
 }
