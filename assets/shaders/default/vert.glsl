@@ -9,13 +9,13 @@ uniform mat4 view;
 uniform mat4 projection;
 
 out vec2 oUV;
-out vec3 blockPos;
+out vec3 oVertex;
 out vec3 oNormal;
 
 void main() {
     vec4 position_ws = model * vec4(vertex, 1.0);
     gl_Position = projection  * view * position_ws;
     oUV = uv;
-    blockPos = vertex;
+    oVertex = vertex;
     oNormal = normal;
 }
