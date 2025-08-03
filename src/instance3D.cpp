@@ -1,4 +1,6 @@
 #include "instance3D.h"
+
+#include <bitset>
 #include <chrono>
 
 namespace Voxel {
@@ -40,71 +42,136 @@ namespace Voxel {
         vertices.reserve(size * size * 8 * 12);
         indices.reserve(size * size * 8 * 6);
 
-        uint8_t voxels_zy_down_face[size * size] = {};
+
+        auto start = std::chrono::high_resolution_clock::now();
+
+        #pragma region voxel_axis_setup
+        uint8_t voxels_zy_top_face[size * size] = {};
+        uint8_t voxels_zy_bottom_face[size * size] = {};
+
+        uint8_t voxels_xz_right_face[size * size] = {};
+        uint8_t voxels_xz_left_face[size * size] = {};
+
+        uint8_t voxels_xz_front_face[size * size] = {};
+        uint8_t voxels_xz_back_face[size * size] = {};
 
         for (size_t x {0}; x < size; x++) {
             for (size_t z {0}; z < size; z++) {
-                uint8_t row = voxels[x + (z * size) + (size * size * 2)];
-                row &= ~(row >> 1);
+                uint8_t row_vertical = voxels[x + (z * size) + (size * size * 2)];
+                uint8_t row_top_face = row_vertical & ~(row_vertical >> 1);
+                uint8_t row_bottom_face = row_vertical & ~(row_vertical << 1);
+
+                uint8_t row = voxels[x + (z * size)];
+                uint8_t row_right_face = row & ~(row >> 1);
+                uint8_t row_left_face = row & ~(row << 1);
 
                 for (uint8_t y {0}; y < size; y++) {
-                    uint8_t value = (row >> y) & 1;
-                    voxels_zy_down_face[z + (y * size)] |= value << x;
+                    voxels_zy_top_face[z + (y * size)] |= ((row_top_face >> y) & 1) << x;
+                    voxels_zy_bottom_face[z + (y * size)] |= ((row_bottom_face >> y) & 1) << x;
+
+
+                    voxels_xz_right_face[z + (y * size)] |= ((row_right_face >> x) & 1) << x;
+                    voxels_xz_left_face[z + (y * size)] |= ((row_left_face >> x) & 1) << x;
                 }
             }
         }
 
-        for (size_t y {0}; y < size; y++)
+        for (size_t y {0}; y < size; y++) {
+            for (size_t x {0}; x < size; x++) {
+                //x-y -> uint8_t
+                uint8_t row2 = voxels[x + (y * size) + (size * size)];
+
+                uint8_t row_front_face = row2 & ~(row2 >> 1);
+                uint8_t row_back_face = row2 & ~(row2 << 1);
+
+                for (size_t z {0}; z < size; z++) {
+                    voxels_xz_front_face[x + (z * size)] |= ((row_front_face >> z) & 1) << y;
+                    voxels_xz_back_face[x + (z * size)] |= ((row_back_face >> z) & 1) << y;
+                }
+            }
+        }
+
+
+
+        for (size_t z {0}; z < size; z++) {
+            std::cout << "z-slice: " << z << std::endl;
+            for (size_t x {0}; x < size; x++) {
+                std::cout << x <<  ": " << std::bitset<8>(voxels_xz_back_face[x]) << std::endl;
+            }
+        }
+
+        uint8_t** arrays = new uint8_t*[6] {
+            voxels_zy_top_face,
+            voxels_zy_bottom_face,
+            voxels_xz_right_face,
+            voxels_xz_left_face,
+            voxels_xz_front_face,
+            voxels_xz_back_face,
+        };
+        #pragma endregion
+
+        for (size_t z {0}; z < size; z++)
         {
-            for (size_t z {0}; z < size; z++) 
+            for (size_t x {0}; x < size; x++)
             {
-                uint8_t& row = voxels_zy_down_face[z + (y * size)];
-                if (row == 0)
-                    continue;
-                
-                while (row != 0)
-                {
-                    uint8_t x0 = std::__countr_zero(row);
-                    uint8_t width = std::__countr_zero(~(row >> x0));
-                    uint8_t mask = ((1u << width) - 1) << x0;
-                    
-                    uint8_t height {1};
-                    row ^= mask;
-                    for (size_t z0 = (z + 1); z0 < size; z0++)
-                    {
-                        if ((mask & voxels_zy_down_face[z0 + (y * size)]) != mask)
-                            break;
-                        
-                        voxels_zy_down_face[z0 + (y * size)] ^= mask;
-                        height++;
+                for (int i = 4; i < 6; i++) {
+                    uint8_t& row = arrays[i][x + (z * size)];
+
+                    if (row == 0)
+                        continue;
+
+                    while (row != 0) {
+                        uint8_t y0 = std::__countr_zero(row);
+                        uint8_t height = std::__countr_zero(~(row >> y0));
+                        uint8_t mask = ((1u << height) - 1) << y0;
+
+                        uint8_t width {1};
+                        row ^= mask;
+
+                        for (size_t x0 = (x + 1); x0 < size;x0++)
+                        {
+                            if ((mask & arrays[i][x0 + (z * size)]) != mask)
+                                break;
+
+                            arrays[i][x0 + (z * size)] ^= mask;
+                            width++;
+                        }
+
+                        size_t old_v_size = vertices.size();
+                        size_t old_i_size = indices.size();
+                        vertices.resize(old_v_size + 12);
+                        indices.resize(old_i_size + 6);
+
+                        float* vertex_ptr = vertices.data() + old_v_size;
+                        unsigned int* index_ptr = indices.data() + old_i_size;
+
+                        float z0f = (float)z - 0.5f;
+                        float x0f = (float)x - 0.5f;
+                        float x1f = (float)(x + width) - 0.5f;
+                        float y0f = (float)y0 - 0.5f;
+                        float y1f = (float)(y0 + height) - 0.5f;
+
+                        if (i == 4) {
+                            z0f += 1.f;
+                        }
+
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;
+                        *vertex_ptr++ = x0f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;
+                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y0f; *vertex_ptr++ = z0f;
+                        *vertex_ptr++ = x1f;  *vertex_ptr++ = y1f; *vertex_ptr++ = z0f;
+
+                        *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
+                        *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
+
+                        triangles += 4;
                     }
-
-                    size_t old_v_size = vertices.size();
-                    size_t old_i_size = indices.size();
-                    vertices.resize(old_v_size + 12);
-                    indices.resize(old_i_size + 6);
-
-                    float* v = vertices.data() + old_v_size;
-                    unsigned int* idx = indices.data() + old_i_size;
-
-                    float x0f = (float)x0 - 0.5f;
-                    float x1f = (float)(x0 + width) - 0.5f;
-                    float z0f = (float)z - 0.5f;
-                    float z1f = (float)(z + height) - 0.5f;
-                    float y0f = (float)y + 0.5f;
-
-                    *v++ = x0f; *v++ = y0f; *v++ = z0f;
-                    *v++ = x1f; *v++ = y0f; *v++ = z0f;
-                    *v++ = x0f; *v++ = y0f; *v++ = z1f;
-                    *v++ = x1f; *v++ = y0f; *v++ = z1f;
-
-                    *idx++ = triangles + 0; *idx++ = triangles + 1; *idx++ = triangles + 2;
-                    *idx++ = triangles + 1; *idx++ = triangles + 3; *idx++ = triangles + 2;
-
-                    triangles += 4;
                 }
             }
         }
+
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> duration = end - start;
+        std::cout << "operation took " << duration.count() << " milliseconds\n";
 
         triangles = indices.size();
         std::cout << "triangles: " << triangles / 3 << "\n";

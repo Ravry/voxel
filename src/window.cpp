@@ -1,10 +1,9 @@
 #include <vector>
-#include <cstdlib>
-#include <ctime> 
 #include <bitset>
 #include "window.h"
 #include "camera.h"
 #include "instance3D.h"
+#include "noise.h"
 
 namespace Voxel {    
     static Camera* camera {nullptr};
@@ -129,46 +128,27 @@ namespace Voxel {
         std::vector<Instance3D> instances;
         Mesh cube_mesh(Cube);
 
-
-        std::srand(static_cast<unsigned int>(std::time(nullptr)));
-
-        constexpr size_t SIZE = sizeof(uint8_t) * 8;
-        constexpr int STRIDE = SIZE * SIZE;
+        Noise noise;
 
         uint8_t voxels[SIZE * SIZE * 3] = {};
 
-        uint8_t proto_noise[SIZE][SIZE][SIZE] = {};
-    
-        for (int y = 0; y < SIZE; y++)
+        for (uint8_t y = 0; y < SIZE; y++)
         {
-            for (int z = 0; z < SIZE; z++)
+            for (uint8_t z = 0; z < SIZE; z++)
             {
-                for (int x = 0; x < SIZE; x++)
-                {
-                    uint8_t random = rand() % 2;
-                    proto_noise[x][y][z] = random;
-                }
-            }
-        }   
-            
-        for (int y = 0; y < SIZE; y++)
-        {
-            for (int z = 0; z < SIZE; z++)
-            {
-                for (int x = 0; x < SIZE; x++)
+                for (uint8_t x = 0; x < SIZE; x++)
                 {
                     uint8_t& row1 = voxels[z + (y * SIZE)];
-                    uint8_t& row2 = voxels[x + (y * SIZE) + STRIDE];
-                    uint8_t& row3 = voxels[x + (z * SIZE) + (STRIDE * 2)];
+                    uint8_t& row2 = voxels[x + (y * SIZE) + (SIZE * SIZE)];
+                    uint8_t& row3 = voxels[x + (z * SIZE) + ((SIZE * SIZE) * 2)];
 
-                    glm::vec3 color = proto_noise[x][y][z] ? glm::vec3(1.0f) : glm::vec3(0.0f);
+                    uint8_t noise_value =  noise.fetch(x, y, z);
+                    if (noise_value)
+                        instances.push_back(Instance3D(&cube_mesh, glm::vec3((float)noise_value), glm::vec3(x, y, z), glm::vec3(.2f)));
 
-                    if (proto_noise[x][y][z])
-                        instances.push_back(Instance3D(&cube_mesh, color, glm::vec3(x, y, z), glm::vec3(.25f)));
-
-                    row1 |= proto_noise[x][y][z] << x;
-                    row2 |= proto_noise[x][y][z] << z;
-                    row3 |= proto_noise[x][y][z] << y;
+                    row1 |= noise_value << x;
+                    row2 |= noise_value << z;
+                    row3 |= noise_value << y;
                 }
             }
         }
@@ -201,7 +181,7 @@ namespace Voxel {
             for (auto& instance : instances) {
                 instance.render(shader);
             }
-            
+
             render_axis_gizmo(vao, shader);
             
             shader.unuse();
