@@ -46,8 +46,9 @@ namespace Voxel {
         load(vertex_shader_file, fragment_shader_file);
     }
     
-    void Shader::use() {
+    Shader& Shader::use() {
         glUseProgram(id);
+        return *this;
     }
 
     void Shader::unuse() {

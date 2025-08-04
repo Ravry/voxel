@@ -31,7 +31,11 @@ namespace Voxel {
         if (glm::length(input) > 0) {
             input = glm::normalize(input);
         }
-            
+
+        yaw += Input::delta_x;
+        pitch -= Input::delta_y;
+        pitch = std::clamp(pitch, -80.f, 80.f);
+
         front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
         front.y = sin(glm::radians(pitch));
         front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
@@ -43,14 +47,6 @@ namespace Voxel {
         position += move; 
 
         matrix = glm::lookAt(position, position + cameraFront, cameraUp);
-    }
-
-    void Camera::mouse_moved(float delta_x, float delta_y) {
-        yaw += delta_x;
-        pitch -= delta_y;
-
-        pitch = std::clamp(pitch, -80.f, 80.f);
-
     }
 
     void Camera::refactor(float width, float height) {

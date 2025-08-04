@@ -12,8 +12,9 @@ namespace Voxel {
             std::string_view frag_file;
 
         public:
+            Shader() = default;
             Shader(std::string_view vertex_shader_file, std::string_view fragment_shader_file);
-            void use();
+            Shader& use();
             void unuse();
             void destroy();
             void reload();

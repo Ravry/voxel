@@ -20,5 +20,12 @@ namespace Voxel {
             buffer << file.rdbuf();
             file_content = buffer.str();
         }
-    }    
+    }
+
+    namespace Time {
+        class Timer {
+        public:
+            static double delta_time;
+        };
+    }
 }
