@@ -11,12 +11,16 @@ layout(std430, binding = 0) buffer BlockData {
 
 in vec2 oUV;
 in vec3 oVertex;
-in vec3 oNormal;
+flat in vec3 oNormal;
+
+uniform vec3 light_direction = vec3(.25, -1, .25);
 
 void main() {
-    ivec3 block_coords = ivec3(floor(oVertex - (oNormal * .01)));
+    ivec3 block_coords = ivec3(floor(oVertex - (oNormal * .0001)));
     block_coords = clamp(block_coords, ivec3(0), ivec3(7));
     uint block_type = blockData.blockTypes[block_coords.x + (block_coords.y * 8) + (block_coords.z * 8 * 8)];
     vec3 texture_color = texture(texure_array, vec3(oUV, block_type)).rgb;
-    color = vec4(texture_color, 1.0);
+
+    float diffuse = max(dot(oNormal, -normalize(light_direction)), .4);
+    color = vec4(texture_color * diffuse, 1.0);
 }

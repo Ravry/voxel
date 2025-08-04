@@ -16,10 +16,13 @@ namespace Voxel {
             void cleanup();
             void refactor(int width, int height);
             void render_axis_gizmo(VAO& vao, Shader& shader);
+            void setup_axis_gizmo(VAO& vao);
         private:
             std::unique_ptr<Camera> camera;
             std::map<std::string, Shader> shaders;
             std::map<std::string, Instance3D> instances;
+            VAO vao_axis_gizmo;
+            VAO vao_box_gizmo;
         };
     }
 }

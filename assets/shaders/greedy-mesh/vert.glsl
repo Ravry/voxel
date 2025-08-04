@@ -10,7 +10,7 @@ uniform mat4 projection;
 
 out vec2 oUV;
 out vec3 oVertex;
-out vec3 oNormal;
+flat out vec3 oNormal;
 
 void main() {
     vec4 position_ws = model * vec4(vertex, 1.0);
