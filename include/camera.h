@@ -19,8 +19,6 @@ namespace Voxel {
             void update(GLFWwindow* window, float delta_time);
             void refactor(float width, float height);
 
-            glm::mat4 get_projection() {
-                return projection;
-            }
+            glm::mat4 get_projection() { return projection; }
     };
 }

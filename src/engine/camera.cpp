@@ -1,11 +1,21 @@
 #include "camera.h"
 
 namespace Voxel {
+    static bool cursor_enabled = false;
+
     Camera::Camera(float width, float height) : Transform(glm::vec3(0), glm::vec3(0), glm::vec3(1)) {
         projection = glm::perspective(glm::radians(60.f), width/height, .01f, 100.f);
     }
 
     void Camera::update(GLFWwindow* window, float delta_time) {
+        if (Input::is_key_pressed(GLFW_KEY_ESCAPE)) {
+            cursor_enabled = !cursor_enabled;
+            glfwSetInputMode(window, GLFW_CURSOR, cursor_enabled ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+        }
+
+        if (cursor_enabled)
+            return;
+
         glm::vec3 input = glm::vec3(0.f);
         if (glfwGetKey(window, GLFW_KEY_W)) {
             input.z += 1; 

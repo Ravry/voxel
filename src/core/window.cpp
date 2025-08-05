@@ -40,7 +40,7 @@ namespace Voxel {
     void Window::run()
     {
         while (!glfwWindowShouldClose(window)) {
-            if (Input::is_key_pressed(GLFW_KEY_ESCAPE)) glfwSetWindowShouldClose(window, GLFW_TRUE);
+            if (Input::is_key_pressed(GLFW_KEY_C)) glfwSetWindowShouldClose(window, GLFW_TRUE);
 
             static double last_time = glfwGetTime();
             double time = glfwGetTime();

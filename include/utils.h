@@ -5,8 +5,6 @@
 #include <fstream>
 #include <sstream>
 
-const size_t SIZE = sizeof(uint8_t) * 8;
-
 namespace Voxel {
     namespace Utils {
         static void read_file_content(std::string_view file_name, std::string& file_content) {

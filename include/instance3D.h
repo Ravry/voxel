@@ -16,7 +16,7 @@ namespace Voxel {
     class Mesh {
     public:
         Mesh(PrimitiveType primitive);
-        Mesh(uint8_t* voxels, size_t size);
+        Mesh(uint16_t* voxels, size_t size);
         void render();
     private:
         VAO vao;

@@ -1,6 +1,7 @@
 #include "noise.h"
 
 namespace Voxel {
+    const int SIZE = sizeof(uint16_t) * 8;
     uint8_t noise_map[SIZE][SIZE][SIZE] = {};
 
     Noise::Noise() {
@@ -12,8 +13,8 @@ namespace Voxel {
             {
                 for (int x = 0; x < SIZE; x++)
                 {
-                    noise_map[x][y][z] = rand() % 2;
-                    // noise_map[x][y][z] = 1;
+                    // noise_map[x][y][z] = rand() % 2;
+                    noise_map[x][y][z] = 1;
                 }
             }
         }
