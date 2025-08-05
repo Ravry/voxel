@@ -13,8 +13,8 @@ namespace Voxel {
             {
                 for (int x = 0; x < SIZE; x++)
                 {
-                    // noise_map[x][y][z] = rand() % 2;
-                    noise_map[x][y][z] = 1;
+                    noise_map[x][y][z] = rand() % 2;
+                    // noise_map[x][y][z] = 1;
                 }
             }
         }

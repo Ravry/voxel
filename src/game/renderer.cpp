@@ -23,12 +23,17 @@ namespace Voxel {
 
             static Noise noise;
 
-            const size_t chunks_count = 6;
-            for (size_t i {0}; i < chunks_count * chunks_count; i++) {
+            const size_t chunks_count = 4;
+            for (size_t i {0}; i < chunks_count * chunks_count * chunks_count; i++) {
                 int x = (i % chunks_count) * SIZE;
-                int z = ((i / chunks_count) % chunks_count) * 16;
-                Chunk chunk(noise, glm::vec3(x, 0, z));
+                int y = ((i / chunks_count) % chunks_count) * SIZE;
+                int z = ((i / chunks_count / chunks_count) % chunks_count) * SIZE;
+                std::shared_ptr<Chunk> chunk = Chunk::create(noise, glm::vec3(x, y, z));
                 chunks.push_back(chunk);
+            }
+
+            for (const auto& chunk : chunks) {
+                chunk->build_mesh();
             }
 
             const unsigned int TEXTURE_SIZE = 16;
@@ -89,10 +94,10 @@ namespace Voxel {
                     .use()
                     .set_uniform_mat4("view", camera->get_matrix())
                     .set_uniform_mat4("projection", camera->get_projection());
-                chunk.render(shaders["greedy-mesh"], ssbo);
+                chunk->render(shaders["greedy-mesh"], ssbo);
 
                 shaders["default"].use();
-                Gizmo::render_line_box_gizmo(vao_box_gizmo, shaders["default"], chunk.position + glm::vec3(-.01f), glm::vec3(16 + .02f));
+                Gizmo::render_line_box_gizmo(vao_box_gizmo, shaders["default"], chunk->position + glm::vec3(-.01f), glm::vec3(16 + .02f));
             }
 
             if (debug) {

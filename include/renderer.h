@@ -21,7 +21,7 @@ namespace Voxel {
             std::unique_ptr<Camera> camera;
             std::map<std::string, Shader> shaders;
             std::map<std::string, Instance3D> instances;
-            std::vector<Chunk> chunks;
+            std::vector<std::shared_ptr<Chunk>> chunks;
             VAO vao_axis_gizmo;
             VAO vao_box_gizmo;
             SSBO ssbo;

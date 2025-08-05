@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <vector>
 #include <map>
 #include <bit>
@@ -6,6 +7,10 @@
 #include "buffer.h"
 #include "geometry.h"
 #include "shader.h"
+
+namespace Voxel::Game {
+    class Chunk;
+}
 
 namespace Voxel {
     enum PrimitiveType {
@@ -16,7 +21,7 @@ namespace Voxel {
     class Mesh {
     public:
         Mesh(PrimitiveType primitive);
-        Mesh(uint16_t* voxels, size_t size);
+        Mesh(uint16_t* voxels, Game::Chunk** chunk, size_t size);
         void render();
     private:
         VAO vao;

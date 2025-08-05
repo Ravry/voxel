@@ -1,5 +1,5 @@
 #include "instance3D.h"
-
+#include "chunk.h"
 #include <bitset>
 #include <chrono>
 
@@ -31,7 +31,7 @@ namespace Voxel {
         ebo.unbind();
     }
 
-    Mesh::Mesh(uint16_t* voxels, size_t size)
+    Mesh::Mesh(uint16_t* voxels, Game::Chunk** chunks, size_t size)
     {
         vao.bind();
         vbo.bind();
@@ -45,7 +45,7 @@ namespace Voxel {
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        #pragma region voxel_axis_setup
+        #pragma region face_culling
         uint16_t voxels_zy_top_face[size * size] = {};
         uint16_t voxels_zy_bottom_face[size * size] = {};
 
@@ -57,17 +57,45 @@ namespace Voxel {
 
         for (size_t i {0}; i < size; i++) {
             for (size_t j {0}; j < size; j++) {
+                //x-axis
                 uint16_t row = voxels[j + (i * size)];
-                uint16_t row_right_face = row & ~(row >> 1);
-                uint16_t row_left_face = row & ~(row << 1);
+                uint32_t row_neighbors_included = static_cast<uint32_t>(row) << 1;
 
+                uint16_t row_x_minus_one_neighbor = chunks[0] ? chunks[0]->voxels[j + (i * size)] : 0;
+                row_neighbors_included |= row_x_minus_one_neighbor >> 15;
+
+                uint16_t row_x_plus_one_neighbor = chunks[1] ? chunks[1]->voxels[j + (i * size)] : 0;
+                row_neighbors_included |= (row_x_plus_one_neighbor & 1) << 17;
+
+                uint16_t row_right_face = static_cast<uint16_t>((row_neighbors_included & ~(row_neighbors_included >> 1)) >> 1);
+                uint16_t row_left_face = static_cast<uint16_t>((row_neighbors_included & ~(row_neighbors_included << 1)) >> 1);
+
+
+                //z-axis
                 uint16_t row2 = voxels[j + (i * size) + (size * size)];
-                uint16_t row_front_face = row2 & ~(row2 >> 1);
-                uint16_t row_back_face = row2 & ~(row2 << 1);
+                uint32_t row2_neighbors_included = static_cast<uint32_t>(row2) << 1;
 
+                uint16_t row_z_minus_one_neighbor = chunks[2] ? chunks[2]->voxels[j + (i * size) + (size * size)] : 0;
+                row2_neighbors_included |= row_z_minus_one_neighbor >> 15;
+
+                uint16_t row_z_plus_one_neighbor = chunks[3] ? chunks[3]->voxels[j + (i * size) + (size * size)] : 0;
+                row2_neighbors_included |= (row_z_plus_one_neighbor & 1) << 17;
+
+                uint16_t row_front_face = static_cast<uint16_t>((row2_neighbors_included & ~(row2_neighbors_included >> 1)) >> 1);
+                uint16_t row_back_face = static_cast<uint16_t>((row2_neighbors_included & ~(row2_neighbors_included << 1)) >> 1);
+
+                //y-axis
                 uint16_t row_vertical = voxels[i + (j * size) + (size * size * 2)];
-                uint16_t row_top_face = row_vertical & ~(row_vertical >> 1);
-                uint16_t row_bottom_face = row_vertical & ~(row_vertical << 1);
+                uint32_t row_vertical_neighbors_included = static_cast<uint32_t>(row_vertical) << 1;
+
+                uint16_t row_y_minus_one_neighbor = chunks[4] ? chunks[4]->voxels[i + (j * size) + (size * size * 2)] : 0;
+                row_vertical_neighbors_included |= row_y_minus_one_neighbor >> 15;
+
+                uint16_t row_y_plus_one_neighbor = chunks[5] ? chunks[5]->voxels[i + (j * size) + (size * size * 2)] : 0;
+                row_vertical_neighbors_included |= (row_y_plus_one_neighbor & 1) << 17;
+
+                uint16_t row_top_face = static_cast<uint16_t>((row_vertical_neighbors_included & ~(row_vertical_neighbors_included >> 1)) >> 1);
+                uint16_t row_bottom_face = static_cast<uint16_t>((row_vertical_neighbors_included & ~(row_vertical_neighbors_included << 1)) >> 1);
 
                 for (size_t k {0}; k < size; k++) {
                     voxels_xz_right_face[k + (j * size)] |= ((row_right_face >> k) & 1) << i;
