@@ -17,7 +17,7 @@ namespace Voxel {
     class Mesh {
     public:
         Mesh(PrimitiveType primitive);
-        Mesh(uint16_t* voxels, Game::Chunk** chunk, size_t size);
+        Mesh(uint16_t* voxels, Game::Chunk** chunk, const size_t size);
         void render();
     private:
         VAO vao;

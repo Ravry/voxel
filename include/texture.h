@@ -29,7 +29,7 @@ namespace Voxel {
         static std::shared_ptr<Texture> create_texture_or_fallback(const TextureCreateInfo& create_info) {
             std::shared_ptr<Texture> texture = std::make_shared<Texture>(create_info);
             if (!texture->is_valid) {
-                std::cout << "[WARNING] " <<  __FILE_NAME__ << ":" << __LINE__ << " the texture couldn't be created (invalid texture)!" << std::endl;
+                std::cout << "[WARNING] " << " the texture couldn't be created (invalid texture)!" << std::endl;
                 return fallback();
             }
 

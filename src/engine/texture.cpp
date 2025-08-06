@@ -1,6 +1,5 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <iostream>
-#include <bits/ostream.tcc>
 #include "texture.h"
 
 namespace Voxel {

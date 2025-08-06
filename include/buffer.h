@@ -18,9 +18,9 @@ namespace Voxel {
             void bind() const override;
             void unbind() const override;
             void data(float* data, size_t data_size);
-            void mapped_data(float* data, size_t data_size);
+            void mapped_data(uint32_t* data, size_t data_size);
         private:
-            float* buffer_memory_ptr;
+            uint32_t* buffer_memory_ptr;
     };
 
     class EBO : public Buffer {
