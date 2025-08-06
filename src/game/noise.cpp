@@ -5,7 +5,7 @@ namespace Voxel {
     uint8_t noise_map[SIZE][SIZE][SIZE] = {};
 
     Noise::Noise() {
-        std::srand(static_cast<unsigned int>(std::time(nullptr)));
+        std::srand(0);
 
         for (int y = 0; y < SIZE; y++)
         {

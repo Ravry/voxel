@@ -23,11 +23,13 @@ namespace Voxel {
 
             static Noise noise;
 
-            const size_t chunks_count = 4;
+            const size_t chunks_count = 2;
             for (size_t i {0}; i < chunks_count * chunks_count * chunks_count; i++) {
                 int x = (i % chunks_count) * SIZE;
+                x -= (chunks_count / 2) * SIZE;
                 int y = ((i / chunks_count) % chunks_count) * SIZE;
                 int z = ((i / chunks_count / chunks_count) % chunks_count) * SIZE;
+                z -= (chunks_count / 2) * SIZE;
                 std::shared_ptr<Chunk> chunk = Chunk::create(noise, glm::vec3(x, y, z));
                 chunks.push_back(chunk);
             }

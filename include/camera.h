@@ -11,7 +11,7 @@ namespace Voxel {
             float pitch {0.f};
             glm::mat4 projection;
         public:
-            glm::vec3 position {glm::vec3(0, 0, 2)};
+            glm::vec3 position {glm::vec3(0, 34, 0)};
             glm::vec3 front;
 
         public:

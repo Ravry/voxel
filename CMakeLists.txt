@@ -5,6 +5,7 @@ project("voxel")
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 add_executable(${PROJECT_NAME} ${SOURCES} vendor/glad/src/glad.c)
 
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE ASSETS_DIR="${PROJECT_SOURCE_DIR}/assets/")
 
 include_directories(${PROJECT_NAME} PRIVATE

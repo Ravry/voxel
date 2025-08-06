@@ -1,35 +1,10 @@
 #pragma once
-#include <memory>
-#include <vector>
-#include <map>
-#include <bit>
+#include "mesh.h"
 #include "transform.h"
-#include "buffer.h"
-#include "geometry.h"
 #include "shader.h"
 
-namespace Voxel::Game {
-    class Chunk;
-}
 
 namespace Voxel {
-    enum PrimitiveType {
-        Triangle,
-        Cube
-    };  
-
-    class Mesh {
-    public:
-        Mesh(PrimitiveType primitive);
-        Mesh(uint16_t* voxels, Game::Chunk** chunk, size_t size);
-        void render();
-    private:
-        VAO vao;
-        VBO vbo;
-        EBO ebo;
-        unsigned int triangles {0};
-    };
-
     class Instance3D : public Transform {
     public:
         Instance3D() = default;

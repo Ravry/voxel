@@ -22,5 +22,5 @@ void main() {
     vec3 texture_color = texture(texure_array, vec3(oUV, block_type)).rgb;
 
     float diffuse = max(dot(oNormal, -normalize(light_direction)), .4);
-    color = vec4(texture_color * diffuse * ((oNormal + 1.0) / 2.0), 1.0);
+    color = vec4(texture_color * diffuse * (block_coords / 8.0), 1.0);
 }

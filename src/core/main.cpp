@@ -4,6 +4,8 @@
 #include <iostream>
 #include <bits/ostream.tcc>
 
+#include <immintrin.h>
+
 using namespace Voxel;
 
 int main() {

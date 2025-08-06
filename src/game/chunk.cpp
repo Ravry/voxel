@@ -53,7 +53,6 @@ namespace Voxel::Game {
         int chunk_top_index = position.x + ((position.y + SIZE) * SIZE) + (position.z * SIZE * SIZE);
         if (chunks.find(chunk_top_index) != chunks.end()) neighbor_chunks[5] = chunks[chunk_top_index].get();
 
-
         mesh = std::make_shared<Mesh>(voxels, neighbor_chunks, SIZE);
         instance = std::make_shared<Instance3D>(mesh.get(), glm::vec3(0, 0, 0), position /*+ glm::vec3((position.x/16) * 2, (position.y/16) * 2,  (position.z / 16) * 2)*/);
     }
