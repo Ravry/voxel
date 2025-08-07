@@ -4,7 +4,7 @@
 #include "misc.h"
 #include "texture.h"
 #include "camera.h"
-#include "chunk.h"
+#include "chunk_manager.h"
 
 namespace Voxel {
     namespace Game {
@@ -18,13 +18,10 @@ namespace Voxel {
             void render_axis_gizmo(VAO& vao, Shader& shader);
             void setup_axis_gizmo(VAO& vao);
         private:
-            std::unique_ptr<Camera> camera;
-            std::map<std::string, Shader> shaders;
             std::map<std::string, Instance3D> instances;
-            std::vector<std::shared_ptr<Chunk>> chunks;
+            std::unique_ptr<Camera> camera;
+            std::unique_ptr<ChunkManager> chunk_manager;
             VAO vao_axis_gizmo;
-            VAO vao_box_gizmo;
-            SSBO ssbo;
         };
     }
 }

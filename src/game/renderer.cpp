@@ -1,42 +1,24 @@
 #include "renderer.h"
 #include "window.h"
 #include "gizmo.h"
+#include "debug_helper.h"
 
 namespace Voxel {
     namespace Game {
         static bool debug {false};
 
         Renderer::Renderer(float width, float height) {
-            camera = std::make_unique<Camera>(width, height);
-
-            static Mesh cube_mesh(Cube);
-
-            shaders["default"] = Shader(
+            Shader::create_shader(
+                "default",
                 ASSETS_DIR "shaders/default/vert.glsl",
                 ASSETS_DIR "shaders/default/frag.glsl"
             );
 
-            shaders["greedy-mesh"] = Shader(
+            Shader::create_shader(
+                "greedy",
                 ASSETS_DIR "shaders/greedy-mesh/vert.glsl",
                 ASSETS_DIR "shaders/greedy-mesh/frag.glsl"
             );
-
-            static Noise noise;
-
-            const size_t chunks_count = 2;
-            for (size_t i {0}; i < chunks_count * chunks_count * chunks_count; i++) {
-                int x = (i % chunks_count) * SIZE;
-                x -= (chunks_count / 2) * SIZE;
-                int y = ((i / chunks_count) % chunks_count) * SIZE;
-                int z = ((i / chunks_count / chunks_count) % chunks_count) * SIZE;
-                z -= (chunks_count / 2) * SIZE;
-                std::shared_ptr<Chunk> chunk = Chunk::create(noise, glm::vec3(x, y, z));
-                chunks.push_back(chunk);
-            }
-
-            for (const auto& chunk : chunks) {
-                chunk->build_mesh();
-            }
 
             const unsigned int TEXTURE_SIZE = 16;
             std::map<unsigned int, std::string_view> block_type_path_map {
@@ -53,12 +35,18 @@ namespace Voxel {
             Texture texture(texture_create_info);
             texture.bind();
 
+            camera = std::make_unique<Camera>(width, height);
+            chunk_manager = std::make_unique<ChunkManager>(glm::ivec3(
+                (static_cast<int>(camera->position.x) / SIZE) * SIZE,
+                0,
+                (static_cast<int>(camera->position.z) / SIZE) * SIZE
+            ));
+
             glEnable(GL_DEPTH_TEST);
             glLineWidth(2.f);
             glClearColor(.4f, .4f, 1.f, 1.f);
 
             Gizmo::setup_axis_gizmo(vao_axis_gizmo);
-            Gizmo::setup_line_box_gizmo(vao_box_gizmo);
         }
 
         void Renderer::update(GLFWwindow* window, float delta_time) {
@@ -70,9 +58,6 @@ namespace Voxel {
             }
 
             if (Input::is_key_pressed(GLFW_KEY_R)) {
-                for (auto& shader : shaders) {
-                    shader.second.reload();
-                }
                 std::cout << "[INFO] shaders reloaded ... " << std::endl;
             }
         }
@@ -80,33 +65,22 @@ namespace Voxel {
         void Renderer::render() {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            shaders["default"]
-                .use()
-                .set_uniform_mat4("view", camera->get_matrix())
-                .set_uniform_mat4("projection", camera->get_projection())
-                .unuse();
-
-            for (auto& instance : instances) {
-                shaders["default"].use();
-                if (debug) instance.second.render(shaders["default"]);
-            }
-
-            for (auto& chunk : chunks) {
-                shaders["greedy-mesh"]
-                    .use()
-                    .set_uniform_mat4("view", camera->get_matrix())
-                    .set_uniform_mat4("projection", camera->get_projection());
-                chunk->render(shaders["greedy-mesh"], ssbo);
-
-                shaders["default"].use();
-                Gizmo::render_line_box_gizmo(vao_box_gizmo, shaders["default"], chunk->position + glm::vec3(-.01f), glm::vec3(16 + .02f));
-            }
+            Shader::get_shader("default")
+                ->use()
+                ->set_uniform_mat4("view", camera->get_matrix())
+                ->set_uniform_mat4("projection", camera->get_projection());
 
             if (debug) {
-                shaders["default"].use();
-                Gizmo::render_axis_gizmo(vao_axis_gizmo, shaders["default"], *camera);
-                shaders["default"].unuse();
+                Gizmo::render_axis_gizmo(vao_axis_gizmo, *camera);
             }
+
+            Shader::get_shader("greedy")
+                ->use()
+                ->set_uniform_mat4("view", camera->get_matrix())
+                ->set_uniform_mat4("projection", camera->get_projection());
+
+            chunk_manager->update(glm::ivec3((static_cast<int>(camera->position.x) / SIZE) * SIZE, 0, (static_cast<int>(camera->position.z) / SIZE) * SIZE));
+            chunk_manager->render_chunk_compounds();
         }
 
         void Renderer::refactor(int width, int height) {

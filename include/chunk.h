@@ -17,7 +17,7 @@ namespace Voxel {
             Chunk() = default;
             Chunk(Noise& noise, glm::vec3 position);
             void build_mesh();
-            void render(Shader& shader, SSBO& ssbo);
+            void render();
 
             glm::vec3 position;
             uint16_t voxels[SIZE * SIZE * 3] = {};
@@ -26,6 +26,7 @@ namespace Voxel {
             std::shared_ptr<Mesh> mesh;
             std::shared_ptr<Instance3D> instance;
 
+            bool built {false};
         };
     }
 }

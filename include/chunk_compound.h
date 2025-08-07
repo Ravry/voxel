@@ -1,0 +1,16 @@
+#pragma once
+#include <glm/glm.hpp>
+#include "chunk.h"
+
+namespace Voxel::Game {
+    class ChunkCompound {
+    public:
+        ChunkCompound(Noise& noise, glm::vec2 position);
+        void build_chunk_meshes();
+        void render();
+
+        glm::vec2 position;
+    private:
+        std::vector<std::shared_ptr<Chunk>> chunks;
+    };
+}
