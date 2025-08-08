@@ -5,14 +5,14 @@ namespace Voxel::Game {
 
     static std::unique_ptr<VAO> vao_box_gizmo;
 
-    ChunkCompound::ChunkCompound(Noise& noise, glm::vec2 position) : position(position) {
+    ChunkCompound::ChunkCompound(Noise& noise, glm::vec3 position) : position(position) {
         if (!vao_box_gizmo.get()) {
             vao_box_gizmo = std::make_unique<VAO>();
             Gizmo::setup_line_box_gizmo(*vao_box_gizmo.get());
         }
 
         for (int i {0}; i < 1; i++) {
-            std::shared_ptr<Chunk> chunk = Chunk::create(noise, glm::vec3(position.x, i * 16, position.y));
+            std::shared_ptr<Chunk> chunk = Chunk::create(noise, glm::vec3(position.x, i * 16, position.z));
             chunks.push_back(std::move(chunk));
         }
     }
@@ -22,7 +22,6 @@ namespace Voxel::Game {
             chunk->build_mesh();
         }
     }
-
 
     void ChunkCompound::render() {
         for (const auto& chunk : chunks) {

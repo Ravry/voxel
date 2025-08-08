@@ -1,9 +1,5 @@
 #include "window.h"
 
-#include <bitset>
-#include <iostream>
-#include <immintrin.h>
-
 using namespace Voxel;
 
 int main() {

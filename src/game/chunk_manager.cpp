@@ -1,46 +1,81 @@
 #include "chunk_manager.h"
 
+
 namespace Voxel::Game {
+    int64_t chunk_position_to_key(int x, int z) {
+        return ((int64_t)x << 32) | (uint32_t)z;
+    }
 
-    ChunkManager::ChunkManager(glm::ivec3 position) {
-        generate_chunk_compounds(glm::vec2(position.x, position.z));
+    glm::vec3 chunk_key_to_position(int64_t key) {
+        return glm::vec3(key >> 32, 0, (int32_t)key);
+    }
 
-        for (auto& chunk_compound : cached_chunk_compounds) {
-            chunk_compound.second->build_chunk_meshes();
+    ChunkManager::ChunkManager() {
+        on_new_chunk_entered(glm::ivec3(0));
+    }
+
+
+    void ChunkManager::update(glm::ivec3 world_space_position) {
+        glm::ivec3 chunk_space_position = glm::ivec3(
+            (world_space_position.x / SIZE) * SIZE,
+            0,
+            (world_space_position.z / SIZE) * SIZE
+        );
+
+        static glm::ivec3 old_position = chunk_space_position;
+        if (old_position != chunk_space_position) {
+            old_position = chunk_space_position;
+            on_new_chunk_entered(chunk_space_position);
         }
     }
 
-    void ChunkManager::update(glm::ivec3 position) {
-        static glm::ivec3 old_position = position;
-        if (old_position != position) {
-            std::cout << "position updated" << std::endl;
-            old_position = position;
-            rendered_chunk_compounds.clear();
-            generate_chunk_compounds(glm::vec2(position.x, position.z));
-        }
-    }
+    static std::unordered_map<int64_t, std::unique_ptr<ChunkCompound>> rendered_chunks;
+    static std::unordered_map<int64_t, std::unique_ptr<ChunkCompound>> cached_chunks;
 
     void ChunkManager::render_chunk_compounds() {
-        for (auto chunk_compound : rendered_chunk_compounds) {
-            chunk_compound->render();
+        for (auto& chunk : rendered_chunks) {
+            chunk.second->render();
         }
     }
 
-    void ChunkManager::generate_chunk_compounds(glm::ivec2 position) {
-        for (int i {0}; i < chunk_render_distance * chunk_render_distance; i++) {
-            int x = ((i % chunk_render_distance) * SIZE) - (chunk_render_distance * SIZE / 2);
-            x += position.x;
-            int z = (((i / chunk_render_distance) % chunk_render_distance) * SIZE) - (chunk_render_distance * SIZE / 2);
-            z += position.y;
+    void ChunkManager::on_new_chunk_entered(glm::ivec3 chunk_space_position) {
+        std::cout << "position updated!\n   position: " << chunk_space_position.x << "; " << chunk_space_position.z << std::endl;
 
-            ChunkCompound* chunk_compound = get_chunk_coumpound(glm::vec2(x, z));
-            if (chunk_compound != nullptr) {
-                rendered_chunk_compounds.push_back(chunk_compound);
-            } else {
-                auto new_compound = std::make_unique<ChunkCompound>(noise, glm::vec2(x, z));
-                new_compound->build_chunk_meshes();
-                cached_chunk_compounds[x + z * SIZE] = std::move(new_compound);
+        const int render_distance_squared = chunk_render_distance * chunk_render_distance;
+
+        std::unordered_set<uint64_t> needed_chunks;
+        for (int x = -chunk_render_distance; x <= chunk_render_distance; x++) {
+            for (int z = -chunk_render_distance; z <= chunk_render_distance; z++) {
+                if (x * x + z * z <= render_distance_squared) {
+                    needed_chunks.insert(chunk_position_to_key(chunk_space_position.x + x * SIZE, chunk_space_position.z + z * SIZE));
+                }
             }
+        }
+
+        for (auto chunk : needed_chunks) {
+            if (rendered_chunks.contains(chunk)) continue;
+
+            if (cached_chunks.find(chunk) == cached_chunks.end()) {
+                rendered_chunks[chunk] = std::make_unique<ChunkCompound>(noise, chunk_key_to_position(chunk));
+            }
+            else {
+                rendered_chunks[chunk] = std::move(cached_chunks[chunk]);
+                cached_chunks.erase(chunk);
+            }
+        }
+
+        std::vector<uint64_t> chunks_to_remove;
+        for (auto& chunk : rendered_chunks) {
+            if (!needed_chunks.contains(chunk.first)) {
+                cached_chunks[chunk.first] = std::move(chunk.second);
+                chunks_to_remove.push_back(chunk.first);
+            }
+            else
+                chunk.second->build_chunk_meshes();
+        }
+
+        for (auto chunk : chunks_to_remove) {
+            rendered_chunks.erase(chunk);
         }
     }
 }

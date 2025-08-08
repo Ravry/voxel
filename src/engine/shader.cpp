@@ -83,10 +83,15 @@ namespace Voxel {
         return this;
     }
 
-    Shader* Shader::set_uniform_vec3(std::string_view name, glm::vec3 vector)
-    {
+    Shader* Shader::set_uniform_vec3(std::string_view name, glm::vec3 vector) {
         int location = glGetUniformLocation(id, name.data());
         glUniform3fv(location, 1, &vector[0]);
+        return this;
+    }
+
+    Shader* Shader::set_uniform_int(std::string_view name, int value) {
+        int location = glGetUniformLocation(id, name.data());
+        glUniform1i(location, value);
         return this;
     }
 }

@@ -24,7 +24,8 @@ namespace Voxel::Game {
                     uint16_t& row2 = voxels[x + (y * SIZE) + (SIZE * SIZE)];
                     uint16_t& row3 = voxels[x + (z * SIZE) + ((SIZE * SIZE) * 2)];
 
-                    uint16_t noise_value = noise.fetch(x, y, z);
+                    uint16_t noise_value = (int)(noise.fetch(position.x + x, position.y + y, position.z + z) * 16);
+                    noise_value = noise_value == y ? 1 : 0;
 
                     data[x + (y * SIZE) + (z * SIZE * SIZE)] = rand() % BlockType::MaxValue;
 

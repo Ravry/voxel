@@ -11,11 +11,11 @@ namespace Voxel {
             float pitch {0.f};
             glm::mat4 projection;
         public:
-            glm::vec3 position {glm::vec3(0, 34, 0)};
+            glm::vec3 position;
             glm::vec3 front;
 
         public:
-            Camera(float width, float height);
+            Camera(float width, float height, glm::vec3 position);
             void update(GLFWwindow* window, float delta_time);
             void refactor(float width, float height);
 

@@ -3,8 +3,8 @@
 namespace Voxel {
     static bool cursor_enabled = false;
 
-    Camera::Camera(float width, float height) : Transform(glm::vec3(0), glm::vec3(0), glm::vec3(1)) {
-        projection = glm::perspective(glm::radians(60.f), width/height, .01f, 100.f);
+    Camera::Camera(float width, float height, glm::vec3 position) : Transform(glm::vec3(0), glm::vec3(0), glm::vec3(1)), position(position) {
+        projection = glm::perspective(glm::radians(60.f), width/height, .01f, 1000.f);
     }
 
     void Camera::update(GLFWwindow* window, float delta_time) {
@@ -60,6 +60,6 @@ namespace Voxel {
     }
 
     void Camera::refactor(float width, float height) {
-        projection = glm::perspective(glm::radians(60.f), width/height, .01f, 100.f);
+        projection = glm::perspective(glm::radians(60.f), width/height, .01f, 1000.f);
     }
 }

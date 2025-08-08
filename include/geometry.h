@@ -4,13 +4,15 @@ namespace Voxel {
     namespace Geometry {
         namespace Triangle {
             static float vertices[] {
-                -0.5f, -0.5f, 0.f,
-                 0.5f, -0.5f, 0.f,
-                 0.0f,  0.5f, 0.f, 
+                -0.5f, -0.5f, 0.f, 0.f, 0.f,
+                 0.5f, -0.5f, 0.f, 1.f, 0.f,
+                 -.5f,  0.5f, 0.f, 0.f, 1.f,
+                 0.5f,  0.5f, 0.f, 1.f, 1.f
             };
 
             static unsigned int indices[] {
-                0, 1, 2
+                0, 1, 2,
+                1, 2, 3
             };
         }
 

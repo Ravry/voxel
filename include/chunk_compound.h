@@ -5,11 +5,11 @@
 namespace Voxel::Game {
     class ChunkCompound {
     public:
-        ChunkCompound(Noise& noise, glm::vec2 position);
+        ChunkCompound(Noise& noise, glm::vec3 position);
         void build_chunk_meshes();
         void render();
 
-        glm::vec2 position;
+        glm::vec3 position;
     private:
         std::vector<std::shared_ptr<Chunk>> chunks;
     };

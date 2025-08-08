@@ -26,6 +26,7 @@ namespace Voxel {
 
             Shader* set_uniform_mat4(std::string_view name, glm::mat4 matrix);
             Shader* set_uniform_vec3(std::string_view name, glm::vec3 vector);
+            Shader* set_uniform_int(std::string_view name, int value);
 
         private:
             void load(std::string_view vertex_shader_file, std::string_view fragment_shader_file);

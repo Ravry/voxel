@@ -7,13 +7,13 @@ namespace Voxel {
         glGenTextures(1, &id);
         bind();
 
+        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
         switch (target) {
             case GL_TEXTURE_2D_ARRAY: {
-                glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
                 glTexImage3D(
                     target,
                     0,
@@ -46,23 +46,22 @@ namespace Voxel {
                 break;
             }
             case GL_TEXTURE_2D: {
-                glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                if (!create_info.data_buffer) {
+                    int w, h, channels;
+                    unsigned char* data = stbi_load(create_info.file_path, &w, &h, &channels, 4);
 
-                int w, h, channels;
-                unsigned char* data = stbi_load(create_info.file_path, &w, &h, &channels, 4);
+                    if (!data) {
+                        is_valid = false;
+                    }
 
-                if (!data) {
-                    is_valid = false;
+                    stbi_image_free(data);
+                    break;
                 }
 
-                stbi_image_free(data);
-                break;
+                glTexImage2D(target, 0, GL_RED, create_info.width, create_info.height, 0, GL_RED, GL_UNSIGNED_BYTE, create_info.data_buffer);
+                glGenerateMipmap(target);
             }
         }
-
         unbind();
     }
 
