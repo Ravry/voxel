@@ -1,2 +1,11 @@
 # Voxel
 ``A simple Minecraft-like voxel engine I'm currently working on (based on OpenGL), created to gain a better understanding of binary greedy meshing and how Minecraft could be set up under the hood. ``
+
+## TODO:
+- [ ] Central Object/Ressource Management
+- [ ] Trees and Environment 
+- [ ] Water
+- [ ] Player Movement (Physics)
+- [ ] Entities
+- [ ] Build and Destroy Blocks
+- [ ] Additional Dimensions (Nether etc.)

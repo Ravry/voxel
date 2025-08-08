@@ -50,9 +50,24 @@ namespace Voxel::Game {
 
                     uint16_t noise_value = (int)(noise.fetch(position.x + x, world_space_position_y, position.z + z) * 31);
 
-                    BlockType block = BlockType::Bedrock;
+                    BlockType block = BlockType::Air;
                     if (world_space_position_y > 0) {
-                        block = (world_space_position_y < noise_value) ? BlockType::Dirt : BlockType::Grass;
+                        if (world_space_position_y > 10) {
+                            if (world_space_position_y > 25)
+                                block = BlockType::Snow;
+                            else
+                                block = BlockType::Stone;
+                        }
+                        else {
+                            if (world_space_position_y == noise_value) {
+                                block = BlockType::Grass;
+                            }
+                            else
+                                block = BlockType::Dirt;
+                        }
+                    }
+                    else {
+                        block = BlockType::Bedrock;
                     }
 
                     data[x + (y * SIZE) + (z * SIZE * SIZE)] = block;

@@ -23,7 +23,9 @@ namespace Voxel {
             std::map<unsigned int, std::vector<std::string_view>> block_type_path_map {
                 { 0, { ASSETS_DIR "textures/double_checkered.png" } },
                 { 1, { ASSETS_DIR "textures/dirt.png" } },
-                { 2,  { ASSETS_DIR "textures/dirt.png", ASSETS_DIR "textures/grass_side.png", ASSETS_DIR "textures/grass.png" } },
+                { 2, { ASSETS_DIR "textures/stone.png"} },
+                { 3, { ASSETS_DIR "textures/snow.png"} },
+                { 4, { ASSETS_DIR "textures/dirt.png", ASSETS_DIR "textures/grass_side.png", ASSETS_DIR "textures/grass.png" } },
             };
 
             Texture::TextureCreateInfo texture_create_info {
@@ -31,7 +33,7 @@ namespace Voxel {
                 .width = TEXTURE_SIZE,
                 .height = TEXTURE_SIZE,
                 .layer_path_map = block_type_path_map,
-                .num_textures = 5,
+                .num_textures = 7,
             };
 
             Texture texture(texture_create_info);
@@ -40,6 +42,7 @@ namespace Voxel {
             camera = std::make_unique<Camera>(width, height, glm::vec3(0, 16, 0));
             chunk_manager = std::make_unique<ChunkManager>(camera->position);
 
+            glEnable (GL_CULL_FACE);
             glEnable(GL_DEPTH_TEST);
             glLineWidth(2.f);
             glClearColor(.4f, .4f, 1.f, 1.f);

@@ -188,6 +188,13 @@ namespace Voxel {
                         if (k == 0) {
                             y0f += 1.f;
                             norm_flip = 1;
+
+                            *index_ptr++ = triangles + 2; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 0;
+                            *index_ptr++ = triangles + 2; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 1;
+                        }
+                        else {
+                            *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
+                            *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
                         }
 
                         *vertex_ptr++ = packed_vertex_data(x0f, y0f, z0f, norm_flip,  0, 1, 0, 0, 0);
@@ -195,8 +202,6 @@ namespace Voxel {
                         *vertex_ptr++ = packed_vertex_data(x0f, y0f, z1f, norm_flip,  0, 1, 0, 0, width);
                         *vertex_ptr++ = packed_vertex_data(x1f, y0f, z1f, norm_flip,  0, 1, 0, height, width);
 
-                        *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
-                        *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
 
                         triangles += 4;
                     }
@@ -242,6 +247,13 @@ namespace Voxel {
                         if (k == 2) {
                             x0f += 1.f;
                             norm_flip = 1;
+
+                            *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
+                            *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
+                        }
+                        else {
+                            *index_ptr++ = triangles + 2; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 0;
+                            *index_ptr++ = triangles + 2; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 1;
                         }
 
                         *vertex_ptr++ = packed_vertex_data(x0f, y0f, z0f, norm_flip, 1, 0, 0, 0, height);
@@ -249,8 +261,6 @@ namespace Voxel {
                         *vertex_ptr++ = packed_vertex_data(x0f, y0f, z1f, norm_flip, 1, 0, 0, width, height);
                         *vertex_ptr++ = packed_vertex_data(x0f, y1f, z1f, norm_flip, 1, 0, 0, width, 0);
 
-                        *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
-                        *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
 
                         triangles += 4;
                     }
@@ -296,6 +306,13 @@ namespace Voxel {
                         if (k == 4) {
                             z0f += 1.f;
                             norm_flip = 1;
+
+                            *index_ptr++ = triangles + 2; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 0;
+                            *index_ptr++ = triangles + 2; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 1;
+                        }
+                        else {
+                            *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
+                            *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
                         }
 
                         *vertex_ptr++ = packed_vertex_data(x0f, y0f, z0f, norm_flip, 0, 0, 1, 0, height);
@@ -303,8 +320,6 @@ namespace Voxel {
                         *vertex_ptr++ = packed_vertex_data(x1f, y0f, z0f, norm_flip, 0, 0, 1, width, height);
                         *vertex_ptr++ = packed_vertex_data(x1f, y1f, z0f, norm_flip, 0, 0, 1, width, 0);
 
-                        *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
-                        *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
 
                         triangles += 4;
                     }

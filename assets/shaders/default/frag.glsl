@@ -5,8 +5,10 @@ out vec4 color;
 uniform sampler2D main_tex;
 uniform vec3 albedo;
 
+uniform bool use_texture;
+
 in vec2 oUV;
 
 void main() {
-    color = vec4(albedo, 1);
+    color = vec4(use_texture ? texture(main_tex, oUV).rgb : albedo, 1);
 }

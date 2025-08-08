@@ -38,10 +38,9 @@ namespace Voxel::Game {
     }
 
     void ChunkManager::on_new_chunk_entered(glm::ivec3 chunk_space_position) {
-        std::cout << "position updated!\n   position: " << chunk_space_position.x << "; " << chunk_space_position.z << std::endl;
+        // std::cout << "position updated!\n   position: " << chunk_space_position.x << "; " << chunk_space_position.z << std::endl;
 
         const int render_distance_squared = chunk_render_distance * chunk_render_distance;
-
         std::unordered_set<uint64_t> needed_chunks;
         for (int x = -chunk_render_distance; x <= chunk_render_distance; x++) {
             for (int z = -chunk_render_distance; z <= chunk_render_distance; z++) {

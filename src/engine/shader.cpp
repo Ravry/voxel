@@ -17,7 +17,6 @@ namespace Voxel {
     void Shader::load(const char* vertex_shader_file, const char* fragment_shader_file) {
         std::string vertex_shader_source_str, fragment_shader_source_str;
 
-
         if (!std::filesystem::exists(vertex_shader_file)) {
             throw std::runtime_error(std::string("Vertex shader file not found: ") + vertex_shader_file);
         }
@@ -25,14 +24,12 @@ namespace Voxel {
             throw std::runtime_error(std::string("Fragment shader file not found: ") + fragment_shader_file);
         }
 
-        std::cout << "test" << std::endl;
         std::ifstream v_shader_file;
         std::ifstream f_shader_file;
 
         v_shader_file.exceptions (std::ifstream::failbit | std::ifstream::badbit);
         f_shader_file.exceptions (std::ifstream::failbit | std::ifstream::badbit);
 
-        std::cout << "test" << std::endl;
         try {
             v_shader_file.open(vertex_shader_file);
             f_shader_file.open(fragment_shader_file);

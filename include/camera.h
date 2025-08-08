@@ -6,6 +6,12 @@
 
 namespace Voxel {
     class Camera : public Transform {
+
+        enum CameraMode {
+            FirstPerson,
+            FreeCam,
+        };
+
         private:
             float yaw {90.f};
             float pitch {0.f};
