@@ -38,6 +38,8 @@ namespace Voxel {
             input.y -= 1; 
         }
 
+        speed_multiplier = Input::is_key_held_down(GLFW_KEY_LEFT_SHIFT) ? 4.f : 1.f;
+
         if (glm::length(input) > 0) {
             input = glm::normalize(input);
         }
@@ -53,7 +55,7 @@ namespace Voxel {
         glm::vec3 cameraUp = glm::vec3(0, 1, 0);
         glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, cameraUp));
 
-        glm::vec3 move = (input.z * cameraFront + input.y * cameraUp + input.x * cameraRight) * (float)delta_time * 8.f;
+        glm::vec3 move = (input.z * cameraFront + input.y * cameraUp + input.x * cameraRight) * ((float)delta_time * speed * speed_multiplier);
         position += move; 
 
         matrix = glm::lookAt(position, position + cameraFront, cameraUp);

@@ -18,7 +18,7 @@ namespace Voxel {
                     target,
                     0,
                     GL_RGBA,
-                    create_info.width, create_info.height, create_info.layer_path_map.size(),
+                    create_info.width, create_info.height, create_info.num_textures,
                     0,
                     GL_RGBA,
                     GL_UNSIGNED_BYTE,
@@ -26,20 +26,24 @@ namespace Voxel {
                 );
 
                 for (auto& layer_path : create_info.layer_path_map) {
-                    int w, h, channels;
-                    unsigned char* data = stbi_load(layer_path.second.data(), &w, &h, &channels, 4);
+                    unsigned int layer_offset {0};
+                    for (auto& path : layer_path.second) {
+                        int w, h, channels;
+                        unsigned char* data = stbi_load(path.data(), &w, &h, &channels, 4);
 
-                    glTexSubImage3D(
-                        target,
-                        0,
-                        0, 0, layer_path.first,
-                        w, h, 1,
-                        GL_RGBA,
-                        GL_UNSIGNED_BYTE,
-                        data
-                    );
+                        glTexSubImage3D(
+                            target,
+                            0,
+                            0, 0, layer_path.first + layer_offset,
+                            w, h, 1,
+                            GL_RGBA,
+                            GL_UNSIGNED_BYTE,
+                            data
+                        );
 
-                    stbi_image_free(data);
+                        stbi_image_free(data);
+                        layer_offset++;
+                    }
                 }
 
                 glGenerateMipmap(target);

@@ -15,8 +15,8 @@ void main() {
     gl_Position = projection * view * model * vec4(position, 1.0);
     oVertex = position;
 
-    oUV = vec2((vertex >> 13u) & 0xFu, (vertex >> 9u) & 0xFu);
+    oUV = vec2((vertex >> 12u) & 0x1Fu, (vertex >> 7u) & 0x1Fu);
 
-    int norm_flip = int((vertex >> 8u) & 0x1u);
-    oNormal = ((norm_flip * 2) - 1) * vec3((vertex >> 7u) & 0x1u, (vertex >> 6u) & 0x1u, (vertex >> 5u) & 0x1u);
+    int norm_flip = int((vertex >> 6u) & 0x1u);
+    oNormal = ((norm_flip * 2) - 1) * vec3((vertex >> 5u) & 0x1u, (vertex >> 4u) & 0x1u, (vertex >> 3u) & 0x1u);
 }

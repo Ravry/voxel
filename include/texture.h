@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <iostream>
 #include "glad/glad.h"
 #include "stb_image.h"
 
@@ -14,7 +15,8 @@ namespace Voxel {
             const char* file_path;
             unsigned int width;
             unsigned int height;
-            std::map<unsigned int, std::string_view> layer_path_map;
+            std::map<unsigned int, std::vector<std::string_view>> layer_path_map;
+            unsigned int num_textures;
             void* data_buffer;
         };
 

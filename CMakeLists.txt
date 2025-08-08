@@ -21,6 +21,11 @@ include_directories(${PROJECT_NAME} PRIVATE
     vendor/noise/
 )
 
+if(MINGW)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
+endif()
+
 find_package(glfw3 CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
 

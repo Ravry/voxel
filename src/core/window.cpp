@@ -45,6 +45,7 @@ namespace Voxel {
             static double last_time = glfwGetTime();
             double time = glfwGetTime();
             Time::Timer::delta_time = time - last_time;
+            // std::cout << (1.f / Time::Timer::delta_time) << " fps (" << Time::Timer::delta_time * 1000.f << "ms)\n";
             last_time = time;
 
             Input::update();

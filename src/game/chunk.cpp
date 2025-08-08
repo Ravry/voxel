@@ -1,16 +1,38 @@
 #include "chunk.h"
 
 namespace Voxel::Game {
-    static std::map<int, std::shared_ptr<Chunk>> chunks;
+    struct ChunkPos {
+        int32_t x, y, z;
+
+        bool operator<(const ChunkPos& other) const {
+            if (x != other.x) return x < other.x;
+            if (y != other.y) return y < other.y;
+            return z < other.z;
+        }
+
+        bool operator==(const ChunkPos& other) const {
+            return x == other.x && y == other.y && z == other.z;
+        }
+    };
+
+    struct ChunkPosHash {
+        std::size_t operator()(const ChunkPos& pos) const {
+            return std::hash<int32_t>()(pos.x) ^
+                   (std::hash<int32_t>()(pos.y) << 1) ^
+                   (std::hash<int32_t>()(pos.z) << 2);
+        }
+    };
+
+    static std::unordered_map<ChunkPos, std::shared_ptr<Chunk>, ChunkPosHash> chunks;
     static std::unique_ptr<SSBO> ssbo;
 
-    std::shared_ptr<Chunk> Chunk::create(Noise& noise, glm::vec3 position) {
+    std::shared_ptr<Chunk> Chunk::create(Noise& noise, glm::ivec3 position) {
         std::shared_ptr<Chunk> chunk = std::make_shared<Chunk>(noise, position);
-        chunks[position.x + (position.y * SIZE) + (position.z * SIZE * SIZE)] = chunk;
+        chunks[ChunkPos {position.x, position.y, position.z}] = chunk;
         return chunk;
     }
 
-    Chunk::Chunk(Noise& noise, glm::vec3 position) : position(position) {
+    Chunk::Chunk(Noise& noise, glm::ivec3 position) : position(position) {
         if (!ssbo.get()) {
             ssbo = std::make_unique<SSBO>();
         }
@@ -24,11 +46,17 @@ namespace Voxel::Game {
                     uint16_t& row2 = voxels[x + (y * SIZE) + (SIZE * SIZE)];
                     uint16_t& row3 = voxels[x + (z * SIZE) + ((SIZE * SIZE) * 2)];
 
-                    uint16_t noise_value = (int)(noise.fetch(position.x + x, position.y + y, position.z + z) * 16);
-                    noise_value = noise_value == y ? 1 : 0;
+                    int world_space_position_y = position.y + y;
 
-                    data[x + (y * SIZE) + (z * SIZE * SIZE)] = rand() % BlockType::MaxValue;
+                    uint16_t noise_value = (int)(noise.fetch(position.x + x, world_space_position_y, position.z + z) * 31);
 
+                    BlockType block = BlockType::Bedrock;
+                    if (world_space_position_y > 0) {
+                        block = (world_space_position_y < noise_value) ? BlockType::Dirt : BlockType::Grass;
+                    }
+
+                    data[x + (y * SIZE) + (z * SIZE * SIZE)] = block;
+                    noise_value = world_space_position_y <= noise_value ? 1 : 0;
                     row1 |= noise_value << x;
                     row2 |= noise_value << z;
                     row3 |= noise_value << y;
@@ -40,34 +68,32 @@ namespace Voxel::Game {
     void Chunk::build_mesh() {
         if (built) return;
 
-        Chunk* neighbor_chunks[6] {};
+        Chunk* neighbor_chunks[6] {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
-        int chunk_left_index = (position.x - SIZE) + (position.y * SIZE) + (position.z * SIZE * SIZE);
+        ChunkPos chunk_left_index {position.x - SIZE, position.y, position.z};
         if (chunks.find(chunk_left_index) != chunks.end()) neighbor_chunks[0] = chunks[chunk_left_index].get();
         else return;
 
-        int chunk_right_index = (position.x + SIZE) + (position.y * SIZE) + (position.z * SIZE * SIZE);
+        ChunkPos chunk_right_index { position.x + SIZE, position.y, position.z };
         if (chunks.find(chunk_right_index) != chunks.end()) neighbor_chunks[1] = chunks[chunk_right_index].get();
         else return;
 
-        int chunk_front_index = position.x + (position.y * SIZE) + ((position.z - SIZE) * SIZE * SIZE);
+        ChunkPos chunk_front_index { position.x, position.y, position.z - SIZE };
         if (chunks.find(chunk_front_index) != chunks.end()) neighbor_chunks[2] = chunks[chunk_front_index].get();
         else return;
 
-        int chunk_back_index = position.x + (position.y * SIZE) + ((position.z + SIZE) * SIZE * SIZE);
+        ChunkPos chunk_back_index { position.x, position.y, position.z + SIZE };
         if (chunks.find(chunk_back_index) != chunks.end()) neighbor_chunks[3] = chunks[chunk_back_index].get();
         else return;
 
-        // int chunk_bottom_index = position.x + ((position.y - SIZE) * SIZE) + (position.z * SIZE * SIZE);
-        // if (chunks.find(chunk_bottom_index) != chunks.end()) neighbor_chunks[4] = chunks[chunk_bottom_index].get();
-        // else return;
-        //
-        // int chunk_top_index = position.x + ((position.y + SIZE) * SIZE) + (position.z * SIZE * SIZE);
-        // if (chunks.find(chunk_top_index) != chunks.end()) neighbor_chunks[5] = chunks[chunk_top_index].get();
-        // else return;
+        ChunkPos chunk_bottom_index { position.x, position.y - SIZE, position.z };
+        if (chunks.find(chunk_bottom_index) != chunks.end()) neighbor_chunks[4] = chunks[chunk_bottom_index].get();
+
+        ChunkPos chunk_top_index { position.x, position.y + SIZE, position.z };
+        if (chunks.find(chunk_top_index) != chunks.end()) neighbor_chunks[5] = chunks[chunk_top_index].get();
 
         mesh = std::make_shared<Mesh>(voxels, neighbor_chunks, SIZE);
-        instance = std::make_shared<Instance3D>(mesh.get(), glm::vec3(0, 0, 0), position /*+ glm::vec3((position.x/16) * 2, (position.y/16) * 2,  (position.z / 16) * 2)*/);
+        instance = std::make_shared<Instance3D>(mesh.get(), glm::vec3(0, 0, 0), position);
         built = true;
     }
 

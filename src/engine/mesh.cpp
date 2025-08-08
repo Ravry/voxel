@@ -41,13 +41,13 @@ namespace Voxel {
         packed |= (pos_y & 0x1F) << 22;
         packed |= (pos_z & 0x1F) << 17;
 
-        packed |= (uv_x & 0xF) << 13;
-        packed |= (uv_y & 0xF) << 9;
+        packed |= (uv_x & 0x1F) << 12;
+        packed |= (uv_y & 0x1F) << 7;
 
-        packed |= (flip & 0x1) << 8;
-        packed |= (norm_x & 0x1) << 7;
-        packed |= (norm_y & 0x1) << 6;
-        packed |= (norm_z & 0x1) << 5;
+        packed |= (flip & 0x1) << 6;
+        packed |= (norm_x & 0x1) << 5;
+        packed |= (norm_y & 0x1) << 4;
+        packed |= (norm_z & 0x1) << 3;
 
         return packed;
     }
@@ -132,7 +132,6 @@ namespace Voxel {
             voxels_xz_front_face, voxels_xz_back_face,
         };
 
-
         std::vector<uint32_t> vertices;
         std::vector<unsigned int> indices;
 
@@ -155,8 +154,8 @@ namespace Voxel {
                     if (row == 0) continue;
 
                     while (row != 0) {
-                        uint16_t x0 = std::__countr_zero(row);
-                        uint16_t height = std::__countr_one(row >> x0);
+                        uint16_t x0 = std::__countr_zero(static_cast<unsigned>(row));
+                        uint16_t height = std::__countr_one(static_cast<unsigned>(row >> x0));
                         uint16_t mask = ((1u << height) - 1) << x0;
 
                         uint16_t width {1};
@@ -208,8 +207,8 @@ namespace Voxel {
                     if (row == 0) continue;
 
                     while (row != 0) {
-                        uint16_t y0 = std::__countr_zero(row);
-                        uint16_t height = std::__countr_one(row >> y0);
+                        uint16_t y0 = std::__countr_zero(static_cast<unsigned>(row));
+                        uint16_t height = std::__countr_one(static_cast<unsigned>(row >> y0));
                         uint16_t mask = ((1u << height) - 1) << y0;
 
                         uint16_t width {1};
@@ -245,10 +244,10 @@ namespace Voxel {
                             norm_flip = 1;
                         }
 
-                        *vertex_ptr++ = packed_vertex_data(x0f, y0f, z0f, norm_flip, 1, 0, 0, 0, 0);
-                        *vertex_ptr++ = packed_vertex_data(x0f, y1f, z0f, norm_flip, 1, 0, 0, height, 0);
-                        *vertex_ptr++ = packed_vertex_data(x0f, y0f, z1f, norm_flip, 1, 0, 0, 0, width);
-                        *vertex_ptr++ = packed_vertex_data(x0f, y1f, z1f, norm_flip, 1, 0, 0, height, width);
+                        *vertex_ptr++ = packed_vertex_data(x0f, y0f, z0f, norm_flip, 1, 0, 0, 0, height);
+                        *vertex_ptr++ = packed_vertex_data(x0f, y1f, z0f, norm_flip, 1, 0, 0, 0, 0);
+                        *vertex_ptr++ = packed_vertex_data(x0f, y0f, z1f, norm_flip, 1, 0, 0, width, height);
+                        *vertex_ptr++ = packed_vertex_data(x0f, y1f, z1f, norm_flip, 1, 0, 0, width, 0);
 
                         *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
                         *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
@@ -262,8 +261,8 @@ namespace Voxel {
                     if (row == 0) continue;
 
                     while (row != 0) {
-                        uint16_t y0 = std::__countr_zero(row);
-                        uint16_t height = std::__countr_one(row >> y0);
+                        uint16_t y0 = std::__countr_zero(static_cast<unsigned>(row));
+                        uint16_t height = std::__countr_one(static_cast<unsigned>(row >> y0));
                         uint16_t mask = ((1u << height) - 1) << y0;
 
                         uint16_t width {1};
@@ -299,10 +298,10 @@ namespace Voxel {
                             norm_flip = 1;
                         }
 
-                        *vertex_ptr++ = packed_vertex_data(x0f, y0f, z0f, norm_flip, 0, 0, 1, 0, 0);
-                        *vertex_ptr++ = packed_vertex_data(x0f, y1f, z0f, norm_flip, 0, 0, 1, height, 0);
-                        *vertex_ptr++ = packed_vertex_data(x1f, y0f, z0f, norm_flip, 0, 0, 1, 0, width);
-                        *vertex_ptr++ = packed_vertex_data(x1f, y1f, z0f, norm_flip, 0, 0, 1, height, width);
+                        *vertex_ptr++ = packed_vertex_data(x0f, y0f, z0f, norm_flip, 0, 0, 1, 0, height);
+                        *vertex_ptr++ = packed_vertex_data(x0f, y1f, z0f, norm_flip, 0, 0, 1, 0, 0);
+                        *vertex_ptr++ = packed_vertex_data(x1f, y0f, z0f, norm_flip, 0, 0, 1, width, height);
+                        *vertex_ptr++ = packed_vertex_data(x1f, y1f, z0f, norm_flip, 0, 0, 1, width, 0);
 
                         *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
                         *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
@@ -315,15 +314,15 @@ namespace Voxel {
 
         #pragma endregion
 
+        triangles = indices.size();
+
         double time_overall = Debug::stop_timer(start);
         double time_greedy = time_overall - time_culling;
-        std::cout << "operation took: " << time_overall << " milliseconds\n";
-        std::cout << "(face-cull) " << time_culling << " milliseconds (" <<  (time_culling / time_overall) * 100.f << "%)\n";
-        std::cout << "(greedy-mesh) " << time_greedy << " milliseconds (" << (time_greedy / time_overall) * 100.f << "%)\n";
-
-        triangles = indices.size();
-        std::cout << "triangles: " << triangles / 3 << "\n";
-        std::cout << std::endl;
+        // std::cout << "operation took: " << time_overall << " milliseconds\n";
+        // std::cout << "(face-cull) " << time_culling << " milliseconds (" <<  (time_culling / time_overall) * 100.f << "%)\n";
+        // std::cout << "(greedy-mesh) " << time_greedy << " milliseconds (" << (time_greedy / time_overall) * 100.f << "%)\n";
+        // std::cout << "triangles: " << triangles / 3 << "\n";
+        // std::cout << std::endl;
 
         // glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(uint32_t), vertices.data(), GL_STATIC_DRAW);
         vbo.mapped_data(vertices.data(), vertices.size() * sizeof(uint32_t));

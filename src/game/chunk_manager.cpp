@@ -2,18 +2,17 @@
 
 
 namespace Voxel::Game {
-    int64_t chunk_position_to_key(int x, int z) {
+    static int64_t chunk_position_to_key(int x, int z) {
         return ((int64_t)x << 32) | (uint32_t)z;
     }
 
-    glm::vec3 chunk_key_to_position(int64_t key) {
+    static glm::vec3 chunk_key_to_position(int64_t key) {
         return glm::vec3(key >> 32, 0, (int32_t)key);
     }
 
-    ChunkManager::ChunkManager() {
-        on_new_chunk_entered(glm::ivec3(0));
+    ChunkManager::ChunkManager(glm::ivec3 position) {
+        on_new_chunk_entered(position);
     }
-
 
     void ChunkManager::update(glm::ivec3 world_space_position) {
         glm::ivec3 chunk_space_position = glm::ivec3(
