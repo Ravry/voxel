@@ -7,10 +7,10 @@ namespace Voxel {
         glGenTextures(1, &id);
         bind();
 
-        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(target, GL_TEXTURE_WRAP_S, create_info.wrap);
+        glTexParameteri(target, GL_TEXTURE_WRAP_T, create_info.wrap);
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, create_info.min_filter);
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, create_info.mag_filter);
 
         switch (target) {
             case GL_TEXTURE_2D_ARRAY: {

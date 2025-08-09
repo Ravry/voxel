@@ -37,6 +37,7 @@ namespace Voxel {
             void bind() const override;
             void unbind() const override;
             void attrib(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
+            void attribi(GLuint index, GLint size, GLenum type, GLsizei stride, const void *pointer);
     };
 
     class SSBO : public Buffer {

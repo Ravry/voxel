@@ -3,6 +3,7 @@
 #include "shader.h"
 #include "camera.h"
 #include "mesh.h"
+#include "resource_manager.h"
 
 namespace Voxel::Gizmo {
     void setup_line_box_gizmo(VAO& vao);

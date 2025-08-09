@@ -343,8 +343,7 @@ namespace Voxel {
         vbo.mapped_data(vertices.data(), vertices.size() * sizeof(uint32_t));
         ebo.data(indices.data(), indices.size() * sizeof(unsigned int));
 
-        glEnableVertexAttribArray(0);
-        glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(uint32_t), 0);
+        vao.attribi(0, 1, GL_UNSIGNED_INT, sizeof(uint32_t), 0);
 
         vao.unbind();
         vbo.unbind();

@@ -64,6 +64,11 @@ namespace Voxel {
         glEnableVertexAttribArray(index);
     }
 
+    void VAO::attribi(GLuint index, GLint size, GLenum type, GLsizei stride, const void *pointer) {
+        glVertexAttribIPointer(index, size, type, stride, pointer);
+        glEnableVertexAttribArray(index);
+    }
+
     SSBO::SSBO() {
         glGenBuffers(1, &id);
     }

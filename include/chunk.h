@@ -5,6 +5,7 @@
 #include "instance3D.h"
 #include "noise.h"
 #include "misc.h"
+#include "resource_manager.h"
 
 namespace Voxel {
     namespace Game {

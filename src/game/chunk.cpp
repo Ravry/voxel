@@ -52,7 +52,7 @@ namespace Voxel::Game {
 
                     BlockType block = BlockType::Air;
                     if (world_space_position_y > 0) {
-                        if (world_space_position_y > 10) {
+                        if (world_space_position_y > 15) {
                             if (world_space_position_y > 25)
                                 block = BlockType::Snow;
                             else
@@ -116,11 +116,11 @@ namespace Voxel::Game {
     void Chunk::render() {
         if (!built) return;
 
-        Shader* shader = Shader::get_shader("greedy").get();
-        shader->use();
+        Shader& shader = ResourceManager::get_resource<Shader>("greedy");
+        shader.use();
         ssbo->bind();
         ssbo->data(0, data, sizeof(data));
-        instance->render(*shader);
+        instance->render(shader);
         ssbo->unbind();
     }
 }

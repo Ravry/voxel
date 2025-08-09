@@ -11,7 +11,7 @@ namespace Voxel {
     void Instance3D::render(Shader& shader) {
         shader
             .set_uniform_mat4("model", matrix)
-            ->set_uniform_vec3("albedo", albedo);
+            .set_uniform_vec3("albedo", albedo);
         model->render();
     }
 }

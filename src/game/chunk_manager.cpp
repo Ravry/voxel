@@ -31,9 +31,12 @@ namespace Voxel::Game {
     static std::unordered_map<int64_t, std::unique_ptr<ChunkCompound>> rendered_chunks;
     static std::unordered_map<int64_t, std::unique_ptr<ChunkCompound>> cached_chunks;
 
-    void ChunkManager::render_chunk_compounds() {
+    void ChunkManager::render_chunk_compounds(Camera& camera) {
+        Camera::Plane frustum_planes[6];
+        camera.get_frustum(frustum_planes);
         for (auto& chunk : rendered_chunks) {
-            chunk.second->render();
+            if (camera.is_box_in_frustum(frustum_planes, chunk.second->position, chunk.second->position + glm::vec3(16.f, 32.f, 16.f)))
+                chunk.second->render();
         }
     }
 

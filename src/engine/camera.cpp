@@ -64,4 +64,80 @@ namespace Voxel {
     void Camera::refactor(float width, float height) {
         projection = glm::perspective(glm::radians(60.f), width/height, .01f, 1000.f);
     }
+
+
+    void normalizePlane(Camera::Plane &plane) {
+        float mag = sqrt(plane.a * plane.a + plane.b * plane.b + plane.c * plane.c);
+        plane.a /= mag;
+        plane.b /= mag;
+        plane.c /= mag;
+        plane.d /= mag;
+    }
+
+    void Camera::get_frustum(Plane* frustum) {
+        glm::mat4 clip = projection * matrix;
+
+        // Left plane
+        frustum[0].a = clip[0][3] + clip[0][0];
+        frustum[0].b = clip[1][3] + clip[1][0];
+        frustum[0].c = clip[2][3] + clip[2][0];
+        frustum[0].d = clip[3][3] + clip[3][0];
+        normalizePlane(frustum[0]);
+
+        // Right plane
+        frustum[1].a = clip[0][3] - clip[0][0];
+        frustum[1].b = clip[1][3] - clip[1][0];
+        frustum[1].c = clip[2][3] - clip[2][0];
+        frustum[1].d = clip[3][3] - clip[3][0];
+        normalizePlane(frustum[1]);
+
+        // Bottom plane
+        frustum[2].a = clip[0][3] + clip[0][1];
+        frustum[2].b = clip[1][3] + clip[1][1];
+        frustum[2].c = clip[2][3] + clip[2][1];
+        frustum[2].d = clip[3][3] + clip[3][1];
+        normalizePlane(frustum[2]);
+
+        // Top plane
+        frustum[3].a = clip[0][3] - clip[0][1];
+        frustum[3].b = clip[1][3] - clip[1][1];
+        frustum[3].c = clip[2][3] - clip[2][1];
+        frustum[3].d = clip[3][3] - clip[3][1];
+        normalizePlane(frustum[3]);
+
+        // Near plane
+        frustum[4].a = clip[0][3] + clip[0][2];
+        frustum[4].b = clip[1][3] + clip[1][2];
+        frustum[4].c = clip[2][3] + clip[2][2];
+        frustum[4].d = clip[3][3] + clip[3][2];
+        normalizePlane(frustum[4]);
+
+        // Far plane
+        frustum[5].a = clip[0][3] - clip[0][2];
+        frustum[5].b = clip[1][3] - clip[1][2];
+        frustum[5].c = clip[2][3] - clip[2][2];
+        frustum[5].d = clip[3][3] - clip[3][2];
+        normalizePlane(frustum[5]);
+    }
+
+    bool Camera::is_box_in_frustum(const Plane planes[6], const glm::vec3& min, const glm::vec3& max) {
+        for (int i = 0; i < 6; i++) {
+            const Plane& p = planes[i];
+
+            // Select the "positive vertex" in direction of plane normal
+            glm::vec3 positive = min;
+            if (p.a >= 0) positive.x = max.x;
+            if (p.b >= 0) positive.y = max.y;
+            if (p.c >= 0) positive.z = max.z;
+
+            // Distance from plane
+            float distance = p.a * positive.x + p.b * positive.y + p.c * positive.z + p.d;
+
+            if (distance < 0) {
+                // Outside the frustum
+                return false;
+            }
+        }
+        return true; // Inside or intersecting
+    }
 }

@@ -4,6 +4,9 @@ namespace Voxel {
 
     Noise::Noise() {
         noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+        noise.SetFractalType(FastNoiseLite::FractalType_FBm);
+        noise.SetFractalOctaves(5);
+        noise.SetFractalLacunarity(2.f);
     }
 
     float Noise::fetch(float x, float y, float z) {

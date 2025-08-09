@@ -11,7 +11,7 @@ namespace Voxel {
             };
 
             static unsigned int indices[] {
-                0, 1, 2,
+                0, 2, 1,
                 1, 2, 3
             };
         }

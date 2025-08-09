@@ -15,6 +15,9 @@ namespace Voxel {
             const char* file_path;
             unsigned int width;
             unsigned int height;
+            GLint wrap {GL_REPEAT};
+            GLint min_filter {GL_NEAREST_MIPMAP_NEAREST};
+            GLint mag_filter {GL_NEAREST};
             std::map<unsigned int, std::vector<std::string_view>> layer_path_map;
             unsigned int num_textures;
             void* data_buffer;
@@ -26,16 +29,6 @@ namespace Voxel {
                 .file_path = ASSETS_DIR "textures/double_checkered.png",
             });
             return fallback_texture;
-        }
-
-        static std::shared_ptr<Texture> create_texture_or_fallback(const TextureCreateInfo& create_info) {
-            std::shared_ptr<Texture> texture = std::make_shared<Texture>(create_info);
-            if (!texture->is_valid) {
-                std::cout << "[WARNING] " << " the texture couldn't be created (invalid texture)!" << std::endl;
-                return fallback();
-            }
-
-            return texture;
         }
 
         Texture(const TextureCreateInfo& create_info);

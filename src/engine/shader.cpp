@@ -69,56 +69,45 @@ namespace Voxel {
         glDeleteShader(vertex_shader);
     }
 
-    static std::map<std::string, std::shared_ptr<Shader>> shaders;
-
-    std::shared_ptr<Shader> Shader::create_shader(const std::string& name, const char* vertex_shader_file, const char* fragment_shader_file) {
-        std::shared_ptr<Shader> shader = std::make_shared<Shader>(vertex_shader_file, fragment_shader_file);
-        shaders[name] = shader;
-        return shader;
-    }
-
-    std::shared_ptr<Shader> Shader::get_shader(const std::string& name) {
-        return shaders[name];
-    }
-
     Shader::Shader(const char* vertex_shader_file, const char* fragment_shader_file) : vert_file(vertex_shader_file), frag_file(fragment_shader_file) {
         load(vertex_shader_file, fragment_shader_file);
     }
+
+    Shader::~Shader() {
+        std::cout << "[INFO] deleting shader program\n";
+        glDeleteProgram(id);
+    }
     
-    Shader* Shader::use() {
+    Shader& Shader::use() {
         glUseProgram(id);
-        return this;
+        return *this;
     }
 
     void Shader::unuse() {
         glUseProgram(0);
     }
 
-    void Shader::destroy() {
-        glDeleteShader(id);
-    }
 
     void Shader::reload() {
-        destroy();
         // load(vert_file, frag_file);
     }
     
-    Shader* Shader::set_uniform_mat4(std::string_view name, glm::mat4 matrix)
+    Shader& Shader::set_uniform_mat4(std::string_view name, glm::mat4 matrix)
     {
         int location = glGetUniformLocation(id, name.data());
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
-        return this;
+        return *this;
     }
 
-    Shader* Shader::set_uniform_vec3(std::string_view name, glm::vec3 vector) {
+    Shader& Shader::set_uniform_vec3(std::string_view name, glm::vec3 vector) {
         int location = glGetUniformLocation(id, name.data());
         glUniform3fv(location, 1, &vector[0]);
-        return this;
+        return *this;
     }
 
-    Shader* Shader::set_uniform_int(std::string_view name, int value) {
+    Shader& Shader::set_uniform_int(std::string_view name, int value) {
         int location = glGetUniformLocation(id, name.data());
         glUniform1i(location, value);
-        return this;
+        return *this;
     }
 }
