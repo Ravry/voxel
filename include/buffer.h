@@ -8,13 +8,12 @@ namespace Voxel {
         public:
             virtual void bind() const = 0;
             virtual void unbind() const = 0;
-            virtual void destroy(); 
-            virtual ~Buffer() = default;
     };
 
     class VBO : public Buffer {
         public:
             VBO();
+            ~VBO();
             void bind() const override;
             void unbind() const override;
             void data(float* data, size_t data_size);
@@ -26,6 +25,7 @@ namespace Voxel {
     class EBO : public Buffer {
         public:
             EBO();
+            ~EBO();
             void bind() const override;
             void unbind() const override;
             void data(unsigned int* data, size_t data_size);
@@ -34,6 +34,7 @@ namespace Voxel {
     class VAO : public Buffer {
         public:
             VAO();
+            ~VAO();
             void bind() const override;
             void unbind() const override;
             void attrib(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
@@ -43,6 +44,7 @@ namespace Voxel {
     class SSBO : public Buffer {
     public:
         SSBO();
+        ~SSBO();
         void bind() const override;
         void unbind() const override;
         void data(unsigned int index, unsigned int *data, size_t data_size);

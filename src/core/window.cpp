@@ -30,11 +30,16 @@ namespace Voxel {
 
         glfwSwapInterval(0);
 
-        renderer = std::make_unique<Game::Renderer>(width, height );
+        renderer = std::make_unique<Game::Renderer>(window, width, height);
+
     }
 
     Window::~Window()
     {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+
         glfwDestroyWindow(window);
         glfwTerminate();
     }
@@ -55,6 +60,7 @@ namespace Voxel {
 
             renderer->update(window, Time::Timer::delta_time);
             renderer->render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
             glfwSwapBuffers(window);
         }

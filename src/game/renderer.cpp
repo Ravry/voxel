@@ -7,7 +7,14 @@ namespace Voxel {
     namespace Game {
         static bool debug {false};
 
-        Renderer::Renderer(float width, float height) {
+        Renderer::Renderer(GLFWwindow* window, float width, float height) {
+            IMGUI_CHECKVERSION();
+            ImGui::CreateContext();
+            ImGuiIO& io = ImGui::GetIO(); (void)io;
+            ImGui::StyleColorsDark();
+            ImGui_ImplGlfw_InitForOpenGL(window, true);
+            ImGui_ImplOpenGL3_Init("#version 330 core");
+
             ResourceManager::create_resource<Shader>(
                 "default",
                 ASSETS_DIR "shaders/default/vert.glsl",
@@ -74,6 +81,7 @@ namespace Voxel {
             glDepthRange(0.0, 1.0);
 
             Gizmo::setup_axis_gizmo(vao_axis_gizmo);
+
         }
 
         void Renderer::update(GLFWwindow* window, float delta_time) {
@@ -89,7 +97,23 @@ namespace Voxel {
             }
         }
 
+        void render_imgui_stuff() {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            ImGui::Begin("statistics");
+
+            ImGui::Text((std::to_string(1./Time::Timer::delta_time) + std::string(" fps (") + std::to_string(Time::Timer::delta_time * 1000.) + std::string(" ms)")).c_str());
+
+            ImGui::End();
+
+            ImGui::Render();
+        }
+
         void Renderer::render() {
+            render_imgui_stuff();
+
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             ResourceManager::get_resource<Shader>("greedy")

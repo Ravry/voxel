@@ -1,4 +1,7 @@
 #pragma once
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 #include "resource_manager.h"
 #include "noise.h"
 #include "misc.h"
@@ -10,7 +13,7 @@ namespace Voxel {
     namespace Game {
         class Renderer {
         public:
-            Renderer(float width, float height);
+            Renderer(GLFWwindow* window, float width, float height);
             void update(GLFWwindow* window, float delta_time);
             void render();
             void refactor(int width, int height);

@@ -350,6 +350,11 @@ namespace Voxel {
         ebo.unbind();
     }
 
+    Mesh::Mesh(std::string_view filename) {
+        
+    }
+
+
     void Mesh::render() {
         if (triangles <= 0) return;
 

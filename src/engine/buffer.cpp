@@ -1,12 +1,15 @@
 #include "buffer.h"
 
-namespace Voxel {
-    void Buffer::destroy() {
-        glDeleteBuffers(1, &id);
-    }
+#include <iostream>
 
+namespace Voxel {
     VBO::VBO() {
         glGenBuffers(1, &id);
+    }
+
+    VBO::~VBO() {
+        // std::cout << "deleting vbo" << std::endl;
+        glDeleteBuffers(1, &id);
     }
 
     void VBO::bind() const {
@@ -29,8 +32,16 @@ namespace Voxel {
         buffer_memory_ptr = (uint32_t*)glMapBufferRange(GL_ARRAY_BUFFER, 0, data_size, flags);
     }
 
+
+
+
     EBO::EBO() {
         glGenBuffers(1, &id);
+    }
+
+    EBO::~EBO() {
+        // std::cout << "deleting ebo" << std::endl;
+        glDeleteBuffers(1, &id);
     }
 
     void EBO::bind() const {
@@ -46,8 +57,16 @@ namespace Voxel {
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, data_size, data, GL_STATIC_DRAW);
     }
 
+
+
+
     VAO::VAO() {
         glGenVertexArrays(1, &id);
+    }
+
+    VAO::~VAO() {
+        // std::cout << "deleting vao" << std::endl;
+        glDeleteVertexArrays(1, &id);
     }
 
     void VAO::bind() const {
@@ -69,8 +88,16 @@ namespace Voxel {
         glEnableVertexAttribArray(index);
     }
 
+
+
+
     SSBO::SSBO() {
         glGenBuffers(1, &id);
+    }
+
+    SSBO::~SSBO() {
+        // std::cout << "deleting ssbo" << std::endl;
+        glDeleteBuffers(1, &id);
     }
 
     void SSBO::bind() const {

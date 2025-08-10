@@ -37,15 +37,19 @@ namespace Voxel::Game {
             ssbo = std::make_unique<SSBO>();
         }
 
+        auto set_block = [&](int x, int y, int z, BlockType block) {
+            data[x + (y * SIZE) + (z * SIZE * SIZE)] = block;
+            int16_t bit = block == BlockType::Air ? 0 : 1;
+            uint16_t& row1 = voxels[z + (y * SIZE)] |= bit << x;;
+            uint16_t& row2 = voxels[x  + (y * SIZE) + (SIZE * SIZE)] |= bit << z;;
+            uint16_t& row3 = voxels[x  + (z * SIZE) + ((SIZE * SIZE) * 2)] |= bit << y;;
+        };
+
         for (uint16_t y = 0; y < SIZE; y++) {
             for (uint16_t z = 0; z < SIZE; z++)
             {
                 for (uint16_t x = 0; x < SIZE; x++)
                 {
-                    uint16_t& row1 = voxels[z + (y * SIZE)];
-                    uint16_t& row2 = voxels[x + (y * SIZE) + (SIZE * SIZE)];
-                    uint16_t& row3 = voxels[x + (z * SIZE) + ((SIZE * SIZE) * 2)];
-
                     int noise_value = height_map[x + (z * SIZE)];
 
                     int world_space_position_y = position.y + y;
@@ -64,57 +68,36 @@ namespace Voxel::Game {
                         block = BlockType::Dirt;
                     }
 
-                    data[x + (y * SIZE) + (z * SIZE * SIZE)] = block;
-
-                    noise_value = block == BlockType::Air ? 0 : 1;
-                    row1 |= noise_value << x;
-                    row2 |= noise_value << z;
-                    row3 |= noise_value << y;
+                    set_block(x, y, z, block);
                 }
             }
         }
 
-        const int tree_height = 4;
+        const int tree_height = 2 + rand() % 3;
+        const int leafs_height = 4;
         for (auto& tree_position : tree_positions) {
             int ground_y = height_map[tree_position.x + (tree_position.y * SIZE)];
-
-            if (ground_y > 96)
+            int chunk_y = (ground_y / 16) * 16;
+            if (ground_y > 96 || position.y != chunk_y)
                 break;
 
-            for (int y = 0; y < SIZE; y++) {
-                int y_position_world_space = y + position.y;
+            int ground_y_chunk_space = (ground_y % 16) + 1;
 
-                if (y_position_world_space > ground_y) {
-                    int current_tree_height = (y_position_world_space - ground_y);
-                    if (current_tree_height < tree_height) {
-                        data[tree_position.x + (y * SIZE) + (tree_position.y * SIZE * SIZE)] = BlockType::Wood;
-                        uint16_t& row1 = voxels[tree_position.y + (y * SIZE)];
-                        uint16_t& row2 = voxels[tree_position.x  + (y * SIZE) + (SIZE * SIZE)];
-                        uint16_t& row3 = voxels[tree_position.x  + (tree_position.y * SIZE) + ((SIZE * SIZE) * 2)];
-                        row1 |= 1 << tree_position.x ;
-                        row2 |= 1 << tree_position.y;
-                        row3 |= 1 << y;
-                    }
-                    else if (current_tree_height < tree_height + 4) {
-                        for (int z = tree_position.y - 2; z < tree_position.y + 3; z++) {
-                            for (int x = tree_position.x - 2; x < tree_position.x + 3; x++)
-                            {
-                                int relX = x - tree_position.x;
-                                int relZ = z - tree_position.y;
-                                if (current_tree_height - 4 != 1 && current_tree_height - 4 != 2) {
-                                    if (relX <= -2 || relX >= 2 || relZ <= -2 || relZ >= 2)
-                                        continue;
-                                }
+            for (int h = 0; h < tree_height; h++) {
+                int y = ground_y_chunk_space + h;
+                if (y >= 16)
+                    break;
+                set_block(tree_position.x, y, tree_position.y, BlockType::Wood);
+            }
 
-                                data[x + (y * SIZE) + (z * SIZE * SIZE)] = BlockType::Leafs;
-                                uint16_t& row1 = voxels[z + (y * SIZE)];
-                                uint16_t& row2 = voxels[x  + (y * SIZE) + (SIZE * SIZE)];
-                                uint16_t& row3 = voxels[x  + (z * SIZE) + ((SIZE * SIZE) * 2)];
-                                row1 |= 1 << x;
-                                row2 |= 1 << z;
-                                row3 |= 1 << y;
-                            }
-                        }
+            for (int y = ground_y_chunk_space + tree_height; y < ground_y_chunk_space + tree_height + leafs_height; y++) {
+                if (y >= 16)
+                    break;
+
+                for (int z = tree_position.y -1; z < tree_position.y + 2; z++) {
+                    for (int x = tree_position.x - 1; x < tree_position.x + 2; x++)
+                    {
+                        set_block(x, y, z, BlockType::Leafs);
                     }
                 }
             }

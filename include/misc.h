@@ -12,4 +12,14 @@ namespace Voxel::Game {
         Air = 0b111,
         MaxValue = Air
     };
+
+    enum BiomeType : uint8_t {
+        Plains = 0,
+        Mountains = 1,
+    };
+
+    struct Biome {
+        float max_amplitude;
+        int min_height;
+    };
 }

@@ -14,7 +14,7 @@ namespace Voxel::Game {
         int height_map[SIZE * SIZE];
         for (int z = 0; z < SIZE; z++) {
             for (int x = 0; x < SIZE; x++) {
-                 height_map[x + (z * SIZE)] = 4 * SIZE + (int)(noise.fetch_heightmap(x + position.x, z + position.z) * 2 * SIZE);
+                 height_map[x + (z * SIZE)] = noise.fetch_heightmap(position.x + x, position.z + z);
             }
         }
 

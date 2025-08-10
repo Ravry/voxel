@@ -4,6 +4,10 @@
 ## TODO:
 - [X] Central Object/Ressource Management
 - [X] Trees
+- [X] ImGUI Support
+- [ ] Multithreaded Chunk-Generation
+- [ ] Biomes and better Terrain-Generation
+- [ ] Skybox
 - [ ] Custom Framebuffer (Anti-Aliasing, SSAO etc.)
 - [ ] Water
 - [ ] Player Movement (Physics)
