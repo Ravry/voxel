@@ -27,18 +27,20 @@ namespace Voxel {
                 { 2, { ASSETS_DIR "textures/stone.png"} },
                 { 3, { ASSETS_DIR "textures/snow.png"} },
                 { 4, { ASSETS_DIR "textures/dirt.png", ASSETS_DIR "textures/grass_side.png", ASSETS_DIR "textures/grass.png" } },
+                { 7, { ASSETS_DIR "textures/wood_top.png", ASSETS_DIR "textures/wood.png", ASSETS_DIR "textures/wood_top.png"} },
+                { 10, { ASSETS_DIR "textures/leafs.png" }}
             };
             Texture::TextureCreateInfo texture_create_info {
                 .target = GL_TEXTURE_2D_ARRAY,
                 .width = TEXTURE_SIZE,
                 .height = TEXTURE_SIZE,
                 .layer_path_map = block_type_path_map,
-                .num_textures = 7,
+                .num_textures = 11,
             };
             ResourceManager::create_resource<Texture>("greedy_texture_array", texture_create_info)
                 .bind();
 
-            camera = &ResourceManager::create_resource<Camera>("camera_game", width, height, glm::vec3(0, 16, 0));
+            camera = &ResourceManager::create_resource<Camera>("camera_game", width, height, glm::vec3(0, 64, 0));
 
             chunk_manager = std::make_unique<ChunkManager>(camera->position);
 
@@ -50,7 +52,7 @@ namespace Voxel {
             uint8_t noise_data[NOISE_TEXTURE_SIZE * NOISE_TEXTURE_SIZE];
             for (int i {0}; i < NOISE_TEXTURE_SIZE; i++) {
                 for (int j {0}; j < NOISE_TEXTURE_SIZE; j++) {
-                    noise_data[i + (j * NOISE_TEXTURE_SIZE)] = noise.fetch(i * 5.f, 0, j* 5.f) * 255;
+                    noise_data[i + (j * NOISE_TEXTURE_SIZE)] = noise.fetch_heightmap(i * 5.f, j* 5.f) * 255;
                 }
             }
             Texture::TextureCreateInfo noise_texture_create_info {
@@ -77,7 +79,6 @@ namespace Voxel {
         void Renderer::update(GLFWwindow* window, float delta_time) {
             camera->update(window, delta_time);
 
-
             if (Input::is_key_pressed(GLFW_KEY_X)) {
                 debug = !debug;
                 glPolygonMode(GL_FRONT_AND_BACK, debug ? GL_LINE : GL_FILL);
@@ -90,7 +91,6 @@ namespace Voxel {
 
         void Renderer::render() {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 
             ResourceManager::get_resource<Shader>("greedy")
                 .use()
@@ -116,7 +116,7 @@ namespace Voxel {
 
         void Renderer::refactor(int width, int height) {
             glViewport(0, 0, width, height);
-            // camera->refactor(width, height);
+            camera->refactor(width, height);
         }
     }
 }

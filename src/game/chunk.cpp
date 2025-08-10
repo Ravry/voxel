@@ -26,13 +26,13 @@ namespace Voxel::Game {
     static std::unordered_map<ChunkPos, std::shared_ptr<Chunk>, ChunkPosHash> chunks;
     static std::unique_ptr<SSBO> ssbo;
 
-    std::shared_ptr<Chunk> Chunk::create(Noise& noise, glm::ivec3 position) {
-        std::shared_ptr<Chunk> chunk = std::make_shared<Chunk>(noise, position);
+    std::shared_ptr<Chunk> Chunk::create(int* height_map, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) {
+        std::shared_ptr<Chunk> chunk = std::make_shared<Chunk>(height_map, tree_positions, noise, position);
         chunks[ChunkPos {position.x, position.y, position.z}] = chunk;
         return chunk;
     }
 
-    Chunk::Chunk(Noise& noise, glm::ivec3 position) : position(position) {
+    Chunk::Chunk(int* height_map, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) : position(position) {
         if (!ssbo.get()) {
             ssbo = std::make_unique<SSBO>();
         }
@@ -46,35 +46,76 @@ namespace Voxel::Game {
                     uint16_t& row2 = voxels[x + (y * SIZE) + (SIZE * SIZE)];
                     uint16_t& row3 = voxels[x + (z * SIZE) + ((SIZE * SIZE) * 2)];
 
+                    int noise_value = height_map[x + (z * SIZE)];
+
                     int world_space_position_y = position.y + y;
-
-                    uint16_t noise_value = (int)(noise.fetch(position.x + x, world_space_position_y, position.z + z) * 31);
-
                     BlockType block = BlockType::Air;
-                    if (world_space_position_y > 0) {
-                        if (world_space_position_y > 15) {
-                            if (world_space_position_y > 25)
-                                block = BlockType::Snow;
-                            else
-                                block = BlockType::Stone;
-                        }
-                        else {
-                            if (world_space_position_y == noise_value) {
-                                block = BlockType::Grass;
-                            }
-                            else
-                                block = BlockType::Dirt;
-                        }
-                    }
-                    else {
+                    if (world_space_position_y == 0)
                         block = BlockType::Bedrock;
+                    else if (world_space_position_y == noise_value) {
+                        if (world_space_position_y > 128)
+                            block = BlockType::Snow;
+                        else if (world_space_position_y > 96)
+                            block = BlockType::Stone;
+                        else
+                            block = BlockType::Grass;
+                    }
+                    else if (world_space_position_y < noise_value) {
+                        block = BlockType::Dirt;
                     }
 
                     data[x + (y * SIZE) + (z * SIZE * SIZE)] = block;
-                    noise_value = world_space_position_y <= noise_value ? 1 : 0;
+
+                    noise_value = block == BlockType::Air ? 0 : 1;
                     row1 |= noise_value << x;
                     row2 |= noise_value << z;
                     row3 |= noise_value << y;
+                }
+            }
+        }
+
+        const int tree_height = 4;
+        for (auto& tree_position : tree_positions) {
+            int ground_y = height_map[tree_position.x + (tree_position.y * SIZE)];
+
+            if (ground_y > 96)
+                break;
+
+            for (int y = 0; y < SIZE; y++) {
+                int y_position_world_space = y + position.y;
+
+                if (y_position_world_space > ground_y) {
+                    int current_tree_height = (y_position_world_space - ground_y);
+                    if (current_tree_height < tree_height) {
+                        data[tree_position.x + (y * SIZE) + (tree_position.y * SIZE * SIZE)] = BlockType::Wood;
+                        uint16_t& row1 = voxels[tree_position.y + (y * SIZE)];
+                        uint16_t& row2 = voxels[tree_position.x  + (y * SIZE) + (SIZE * SIZE)];
+                        uint16_t& row3 = voxels[tree_position.x  + (tree_position.y * SIZE) + ((SIZE * SIZE) * 2)];
+                        row1 |= 1 << tree_position.x ;
+                        row2 |= 1 << tree_position.y;
+                        row3 |= 1 << y;
+                    }
+                    else if (current_tree_height < tree_height + 4) {
+                        for (int z = tree_position.y - 2; z < tree_position.y + 3; z++) {
+                            for (int x = tree_position.x - 2; x < tree_position.x + 3; x++)
+                            {
+                                int relX = x - tree_position.x;
+                                int relZ = z - tree_position.y;
+                                if (current_tree_height - 4 != 1 && current_tree_height - 4 != 2) {
+                                    if (relX <= -2 || relX >= 2 || relZ <= -2 || relZ >= 2)
+                                        continue;
+                                }
+
+                                data[x + (y * SIZE) + (z * SIZE * SIZE)] = BlockType::Leafs;
+                                uint16_t& row1 = voxels[z + (y * SIZE)];
+                                uint16_t& row2 = voxels[x  + (y * SIZE) + (SIZE * SIZE)];
+                                uint16_t& row3 = voxels[x  + (z * SIZE) + ((SIZE * SIZE) * 2)];
+                                row1 |= 1 << x;
+                                row2 |= 1 << z;
+                                row3 |= 1 << y;
+                            }
+                        }
+                    }
                 }
             }
         }

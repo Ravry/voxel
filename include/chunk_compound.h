@@ -3,6 +3,8 @@
 #include "chunk.h"
 
 namespace Voxel::Game {
+    const int num_chunks_per_compound = 16;
+
     class ChunkCompound {
     public:
         ChunkCompound(Noise& noise, glm::vec3 position);

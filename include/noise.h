@@ -6,7 +6,7 @@ namespace Voxel {
     class Noise {
     public:
         Noise();
-        float fetch(float x, float y, float z);
+        float fetch_heightmap(float x, float z);
     private:
         FastNoiseLite noise;
     };

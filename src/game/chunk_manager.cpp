@@ -35,7 +35,7 @@ namespace Voxel::Game {
         Camera::Plane frustum_planes[6];
         camera.get_frustum(frustum_planes);
         for (auto& chunk : rendered_chunks) {
-            if (camera.is_box_in_frustum(frustum_planes, chunk.second->position, chunk.second->position + glm::vec3(16.f, 32.f, 16.f)))
+            if (camera.is_box_in_frustum(frustum_planes, chunk.second->position, chunk.second->position + glm::vec3(16.f, 16.f * num_chunks_per_compound, 16.f)))
                 chunk.second->render();
         }
     }

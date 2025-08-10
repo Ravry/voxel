@@ -28,7 +28,7 @@ namespace Voxel {
             first_mouse = false;
         }
 
-        static float sensitivity = 10.f;
+        static float sensitivity = 8.f;
         delta_x += (xpos - last_xpos) * sensitivity * Time::Timer::delta_time;
         delta_y += (ypos - last_ypos) * sensitivity * Time::Timer::delta_time;
 

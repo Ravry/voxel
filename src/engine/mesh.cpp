@@ -351,6 +351,8 @@ namespace Voxel {
     }
 
     void Mesh::render() {
+        if (triangles <= 0) return;
+
         vao.bind();
         glDrawElements(GL_TRIANGLES, triangles, GL_UNSIGNED_INT, 0);
         vao.unbind();

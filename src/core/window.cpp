@@ -28,6 +28,8 @@ namespace Voxel {
             glfwTerminate();
         }
 
+        glfwSwapInterval(0);
+
         renderer = std::make_unique<Game::Renderer>(width, height );
     }
 

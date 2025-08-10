@@ -10,8 +10,21 @@ namespace Voxel::Game {
             Gizmo::setup_line_box_gizmo(*vao_box_gizmo.get());
         }
 
-        for (int i {0}; i < 2; i++) {
-            std::shared_ptr<Chunk> chunk = Chunk::create(noise, glm::ivec3(position.x, i * 16, position.z));
+
+        int height_map[SIZE * SIZE];
+        for (int z = 0; z < SIZE; z++) {
+            for (int x = 0; x < SIZE; x++) {
+                 height_map[x + (z * SIZE)] = 4 * SIZE + (int)(noise.fetch_heightmap(x + position.x, z + position.z) * 2 * SIZE);
+            }
+        }
+
+        std::vector<glm::ivec2> tree_positions {
+            // glm::ivec2(rand() % 16, rand() % 16)
+            glm::ivec2(8, 8)
+        };
+
+        for (int i {0}; i < num_chunks_per_compound; i++) {
+            std::shared_ptr<Chunk> chunk = Chunk::create(height_map, tree_positions, noise, glm::ivec3(position.x, i * SIZE, position.z));
             chunks.push_back(std::move(chunk));
         }
     }
