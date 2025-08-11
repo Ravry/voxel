@@ -22,11 +22,13 @@ namespace Voxel {
 
             glm::ivec3 position;
             uint16_t voxels[SIZE * SIZE * 3] = {};
-        private:
-            unsigned int data[SIZE * SIZE * SIZE];
             std::shared_ptr<Mesh> mesh;
             std::shared_ptr<Instance3D> instance;
+            std::shared_ptr<SSBO> ssbo;
+            bool is_empty {true};
 
+        private:
+            unsigned int data[SIZE * SIZE * SIZE] {};
             bool built {false};
         };
     }

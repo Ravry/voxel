@@ -1,8 +1,8 @@
 #pragma once
 #include <bit>
 #include <vector>
+#include <stdint.h>
 #include <string_view>
-#include "buffer.h"
 #include "geometry.h"
 
 namespace Voxel::Game {
@@ -20,11 +20,9 @@ namespace Voxel {
         Mesh(PrimitiveType primitive);
         Mesh(uint16_t* voxels, Game::Chunk** chunk, const size_t size);
         Mesh(std::string_view filename);
-        void render();
-    private:
-        VAO vao;
-        VBO vbo;
-        EBO ebo;
+
+        std::vector<uint32_t> vertices;
+        std::vector<unsigned int> indices;
         unsigned int triangles {0};
     };
 }

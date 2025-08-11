@@ -18,6 +18,7 @@ namespace Voxel {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
         glfwSetKeyCallback(window, Input::key_callback);
+        glfwSetMouseButtonCallback(window, Input::mouse_button_callback);
         glfwSetCursorPosCallback(window, Input::mouse_callback);
         glfwSetWindowSizeCallback(window, [] (GLFWwindow* window, int width, int height) { renderer->refactor(width, height); });
 
@@ -31,7 +32,6 @@ namespace Voxel {
         glfwSwapInterval(0);
 
         renderer = std::make_unique<Game::Renderer>(window, width, height);
-
     }
 
     Window::~Window()
@@ -52,7 +52,6 @@ namespace Voxel {
             static double last_time = glfwGetTime();
             double time = glfwGetTime();
             Time::Timer::delta_time = time - last_time;
-            // std::cout << (1.f / Time::Timer::delta_time) << " fps (" << Time::Timer::delta_time * 1000.f << "ms)\n";
             last_time = time;
 
             Input::update();

@@ -101,7 +101,7 @@ namespace Voxel {
     }
 
     void SSBO::bind() const {
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, id);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, id);
     }
 
     void SSBO::unbind() const {
@@ -110,6 +110,5 @@ namespace Voxel {
 
     void SSBO::data(unsigned int index, unsigned int *data, size_t data_size) {
         glBufferData(GL_SHADER_STORAGE_BUFFER, data_size, data, GL_STATIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, id);
     }
 }

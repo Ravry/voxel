@@ -1,16 +1,8 @@
 #include "chunk_compound.h"
-#include "gizmo.h"
 
 namespace Voxel::Game {
-    static std::unique_ptr<VAO> vao_box_gizmo;
 
     ChunkCompound::ChunkCompound(Noise& noise, glm::vec3 position) : position(position) {
-        if (!vao_box_gizmo.get()) {
-            vao_box_gizmo = std::make_unique<VAO>();
-            Gizmo::setup_line_box_gizmo(*vao_box_gizmo.get());
-        }
-
-
         int height_map[SIZE * SIZE];
         for (int z = 0; z < SIZE; z++) {
             for (int x = 0; x < SIZE; x++) {
@@ -25,7 +17,8 @@ namespace Voxel::Game {
 
         for (int i {0}; i < num_chunks_per_compound; i++) {
             std::shared_ptr<Chunk> chunk = Chunk::create(height_map, tree_positions, noise, glm::ivec3(position.x, i * SIZE, position.z));
-            chunks.push_back(std::move(chunk));
+            if (!chunk->is_empty)
+                chunks.push_back(std::move(chunk));
         }
     }
 
@@ -37,7 +30,6 @@ namespace Voxel::Game {
 
     void ChunkCompound::render() {
         for (const auto& chunk : chunks) {
-            // Gizmo::render_line_box_gizmo(*vao_box_gizmo.get(), chunk->position, glm::vec3(16.f));
             chunk->render();
         }
     }

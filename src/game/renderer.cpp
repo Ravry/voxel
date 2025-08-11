@@ -105,6 +105,7 @@ namespace Voxel {
             ImGui::Begin("statistics");
 
             ImGui::Text((std::to_string(1./Time::Timer::delta_time) + std::string(" fps (") + std::to_string(Time::Timer::delta_time * 1000.) + std::string(" ms)")).c_str());
+            ImGui::Checkbox("show_gizmos", &Gizmo::show_gizmos);
 
             ImGui::End();
 

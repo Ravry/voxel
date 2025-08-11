@@ -1,6 +1,8 @@
 #include "gizmo.h"
 
 namespace Voxel::Gizmo {
+    bool show_gizmos {false};
+
     void setup_line_box_gizmo(VAO& vao) {
         VBO vbo;
         EBO ebo;
@@ -43,7 +45,9 @@ namespace Voxel::Gizmo {
     }
 
     void render_line_box_gizmo(VAO& vao, glm::vec3 position, glm::vec3 size) {
-        Shader shader = ResourceManager::get_resource<Shader>("default");
+        if (!show_gizmos) return;
+
+        auto& shader = ResourceManager::get_resource<Shader>("default");
         vao.bind();
         shader.use().set_uniform_mat4("model", glm::scale(glm::translate(glm::mat4(1.0f), position), size)).set_uniform_vec3("albedo", glm::vec3(1.f));
         glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, (void*)0);

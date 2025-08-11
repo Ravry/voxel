@@ -4,31 +4,16 @@
 
 namespace Voxel {
     Mesh::Mesh(PrimitiveType primitive) {
-        vao.bind();
-        vbo.bind();
-        ebo.bind();
-
         switch (primitive) {
             case PrimitiveType::Cube: {
-                vbo.data(Geometry::Cube::vertices, sizeof(Geometry::Cube::vertices));
-                ebo.data(Geometry::Cube::indices, sizeof(Geometry::Cube::indices));
                 triangles = sizeof(Geometry::Cube::indices)/sizeof(unsigned int);
                 break;
             }
             default: {
-                vbo.data(Geometry::Triangle::vertices, sizeof(Geometry::Triangle::vertices));
-                ebo.data(Geometry::Triangle::indices, sizeof(Geometry::Triangle::indices));
                 triangles = sizeof(Geometry::Triangle::indices)/sizeof(unsigned int);
                 break;
             }
         }
-
-        vao.attrib(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        vao.attrib(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-
-        vao.unbind();
-        vbo.unbind();
-        ebo.unbind();
     }
 
     uint32_t packed_vertex_data(
@@ -54,12 +39,6 @@ namespace Voxel {
 
     Mesh::Mesh(uint16_t* voxels, Game::Chunk** chunks, const std::size_t size)
     {
-        vao.bind();
-        vbo.bind();
-        ebo.bind();
-
-        auto start = Debug::start_timer();
-
         #pragma region face_culling
         uint16_t voxels_zy_top_face[size * size] = {};
         uint16_t voxels_zy_bottom_face[size * size] = {};
@@ -132,13 +111,8 @@ namespace Voxel {
             voxels_xz_front_face, voxels_xz_back_face,
         };
 
-        std::vector<uint32_t> vertices;
-        std::vector<unsigned int> indices;
-
         vertices.reserve(size * size * 4 * 6);
         indices.reserve(size * size * 8 * 6);
-
-        double time_culling = Debug::stop_timer(start);
 
         #pragma region greedy_meshing
 
@@ -330,36 +304,7 @@ namespace Voxel {
         #pragma endregion
 
         triangles = indices.size();
-
-        double time_overall = Debug::stop_timer(start);
-        double time_greedy = time_overall - time_culling;
-        // std::cout << "operation took: " << time_overall << " milliseconds\n";
-        // std::cout << "(face-cull) " << time_culling << " milliseconds (" <<  (time_culling / time_overall) * 100.f << "%)\n";
-        // std::cout << "(greedy-mesh) " << time_greedy << " milliseconds (" << (time_greedy / time_overall) * 100.f << "%)\n";
-        // std::cout << "triangles: " << triangles / 3 << "\n";
-        // std::cout << std::endl;
-
-        // glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(uint32_t), vertices.data(), GL_STATIC_DRAW);
-        vbo.mapped_data(vertices.data(), vertices.size() * sizeof(uint32_t));
-        ebo.data(indices.data(), indices.size() * sizeof(unsigned int));
-
-        vao.attribi(0, 1, GL_UNSIGNED_INT, sizeof(uint32_t), 0);
-
-        vao.unbind();
-        vbo.unbind();
-        ebo.unbind();
     }
 
-    Mesh::Mesh(std::string_view filename) {
-        
-    }
-
-
-    void Mesh::render() {
-        if (triangles <= 0) return;
-
-        vao.bind();
-        glDrawElements(GL_TRIANGLES, triangles, GL_UNSIGNED_INT, 0);
-        vao.unbind();
-    }
+    Mesh::Mesh(std::string_view filename) {}
 }

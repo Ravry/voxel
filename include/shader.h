@@ -1,8 +1,10 @@
 #pragma once
 #include <string_view>
 #include <memory>
+#include <filesystem>
+#include <fstream>
 #include <glad/glad.h>
-#include <iostream>
+#include "log.h"
 #include "transform.h"
 #include "utils.h"
 

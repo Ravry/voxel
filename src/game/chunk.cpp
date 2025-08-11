@@ -1,6 +1,9 @@
 #include "chunk.h"
+#include "gizmo.h"
 
 namespace Voxel::Game {
+    static std::unique_ptr<VAO> vao_box_gizmo;
+
     struct ChunkPos {
         int32_t x, y, z;
 
@@ -24,7 +27,6 @@ namespace Voxel::Game {
     };
 
     static std::unordered_map<ChunkPos, std::shared_ptr<Chunk>, ChunkPosHash> chunks;
-    static std::unique_ptr<SSBO> ssbo;
 
     std::shared_ptr<Chunk> Chunk::create(int* height_map, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) {
         std::shared_ptr<Chunk> chunk = std::make_shared<Chunk>(height_map, tree_positions, noise, position);
@@ -33,13 +35,13 @@ namespace Voxel::Game {
     }
 
     Chunk::Chunk(int* height_map, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) : position(position) {
-        if (!ssbo.get()) {
-            ssbo = std::make_unique<SSBO>();
-        }
-
         auto set_block = [&](int x, int y, int z, BlockType block) {
             data[x + (y * SIZE) + (z * SIZE * SIZE)] = block;
-            int16_t bit = block == BlockType::Air ? 0 : 1;
+            int16_t bit {0};
+            if (block != BlockType::Air) {
+                bit = 1;
+                is_empty = false;
+            }
             uint16_t& row1 = voxels[z + (y * SIZE)] |= bit << x;;
             uint16_t& row2 = voxels[x  + (y * SIZE) + (SIZE * SIZE)] |= bit << z;;
             uint16_t& row3 = voxels[x  + (z * SIZE) + ((SIZE * SIZE) * 2)] |= bit << y;;
@@ -132,19 +134,30 @@ namespace Voxel::Game {
         if (chunks.find(chunk_top_index) != chunks.end()) neighbor_chunks[5] = chunks[chunk_top_index].get();
 
         mesh = std::make_shared<Mesh>(voxels, neighbor_chunks, SIZE);
-        instance = std::make_shared<Instance3D>(mesh.get(), glm::vec3(0, 0, 0), position);
         built = true;
     }
 
 
     void Chunk::render() {
+        if (!vao_box_gizmo.get()) {
+            vao_box_gizmo = std::make_unique<VAO>();
+            Gizmo::setup_line_box_gizmo(*vao_box_gizmo.get());
+        }
+
         if (!built) return;
 
-        Shader& shader = ResourceManager::get_resource<Shader>("greedy");
-        shader.use();
-        ssbo->bind();
-        ssbo->data(0, data, sizeof(data));
-        instance->render(shader);
-        ssbo->unbind();
+        if (!instance.get() && mesh->triangles > 0) {
+            instance = std::make_unique<Instance3D>(mesh.get(), glm::vec3(1.f), position);
+            ssbo = std::make_unique<SSBO>();
+            ssbo->bind();
+            ssbo->data(0, data, sizeof(unsigned int) * 16 * 16 * 16);
+            ssbo->unbind();
+        }
+        else if (instance.get()) {
+            Gizmo::render_line_box_gizmo(*vao_box_gizmo.get(), position, glm::vec3(16.f));
+            ssbo->bind();
+            instance->render(ResourceManager::get_resource<Shader>("greedy"));
+            ssbo->unbind();
+        }
     }
 }

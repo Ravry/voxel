@@ -2,9 +2,8 @@ cmake_minimum_required(VERSION 3.31)
 
 project("voxel")
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 
 file(GLOB IMGUI_CORE_SOURCES "vendor/imgui/*.cpp")
 file(GLOB_RECURSE SOURCES "src/*.cpp")
@@ -23,15 +22,11 @@ include_directories(${PROJECT_NAME} PRIVATE
     vendor/imgui
 )
 
-if(MINGW)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
-endif()
-
 find_package(glfw3 CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenGL::GL
     glfw
+    -lstdc++exp
 )

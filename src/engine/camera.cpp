@@ -9,8 +9,13 @@ namespace Voxel {
 
     void Camera::update(GLFWwindow* window, float delta_time) {
         if (Input::is_key_pressed(GLFW_KEY_ESCAPE)) {
-            cursor_enabled = !cursor_enabled;
-            glfwSetInputMode(window, GLFW_CURSOR, cursor_enabled ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+            cursor_enabled = true;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+
+        if (Input::is_key_pressed(GLFW_MOUSE_BUTTON_2)) {
+            cursor_enabled = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
 
         if (cursor_enabled)

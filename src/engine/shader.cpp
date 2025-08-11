@@ -1,7 +1,5 @@
 #include "shader.h"
 
-#include <filesystem>
-#include <fstream>
 
 namespace Voxel {
     void check_status(unsigned int shader, GLenum pname) {
@@ -10,7 +8,7 @@ namespace Voxel {
         if (!success) {
             char info_log[512];
             glGetShaderInfoLog(shader, 512, NULL, info_log);
-            std::cout << "ERROR::SHADER::COMPILATION_FAILED\n" << info_log << std::endl;
+            LOG("ERROR::SHADER::COMPILATION_FAILED");
         }
     }
 
@@ -42,7 +40,7 @@ namespace Voxel {
             fragment_shader_source_str = fShaderStream.str();
         }
         catch (std::ios_base::failure& e) {
-            std::cerr << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ\n" << e.what() << std::endl;
+            LOG("ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ");
             return;
         }
 
@@ -74,7 +72,7 @@ namespace Voxel {
     }
 
     Shader::~Shader() {
-        std::cout << "[INFO] deleting shader program\n";
+        LOG("Shader::~Shader()");
         glDeleteProgram(id);
     }
     
@@ -89,7 +87,7 @@ namespace Voxel {
 
 
     void Shader::reload() {
-        // load(vert_file, frag_file);
+        load(vert_file.data(), frag_file.data());
     }
     
     Shader& Shader::set_uniform_mat4(std::string_view name, glm::mat4 matrix)
