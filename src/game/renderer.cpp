@@ -7,6 +7,10 @@ namespace Voxel {
     namespace Game {
         static bool debug {false};
 
+        unsigned int convert_block_type_to_index(BlockType block_type) {
+            return block_type >> 1;
+        }
+
         Renderer::Renderer(GLFWwindow* window, float width, float height) {
             IMGUI_CHECKVERSION();
             ImGui::CreateContext();
@@ -29,20 +33,20 @@ namespace Voxel {
 
             const unsigned int TEXTURE_SIZE = 16;
             std::map<unsigned int, std::vector<std::string_view>> block_type_path_map {
-                { 0, { ASSETS_DIR "textures/double_checkered.png" } },
-                { 1, { ASSETS_DIR "textures/dirt.png" } },
-                { 2, { ASSETS_DIR "textures/stone.png"} },
-                { 3, { ASSETS_DIR "textures/snow.png"} },
-                { 4, { ASSETS_DIR "textures/dirt.png", ASSETS_DIR "textures/grass_side.png", ASSETS_DIR "textures/grass.png" } },
-                { 7, { ASSETS_DIR "textures/wood_top.png", ASSETS_DIR "textures/wood.png", ASSETS_DIR "textures/wood_top.png"} },
-                { 10, { ASSETS_DIR "textures/leafs.png" }}
+                { convert_block_type_to_index(BlockType::Dirt), { ASSETS_DIR "textures/dirt.png" } },
+                { convert_block_type_to_index(BlockType::Stone), { ASSETS_DIR "textures/stone.png"} },
+                { convert_block_type_to_index(BlockType::Snow), { ASSETS_DIR "textures/snow.png"} },
+                { convert_block_type_to_index(BlockType::Grass), { ASSETS_DIR "textures/dirt.png", ASSETS_DIR "textures/grass_side.png", ASSETS_DIR "textures/grass.png" } },
+                { convert_block_type_to_index(BlockType::Wood), { ASSETS_DIR "textures/wood_top.png", ASSETS_DIR "textures/wood.png", ASSETS_DIR "textures/wood_top.png"} },
+                { convert_block_type_to_index(BlockType::Leafs), { ASSETS_DIR "textures/leafs.png" }},
+                { convert_block_type_to_index(BlockType::Bedrock), { ASSETS_DIR "textures/double_checkered.png" } },
             };
             Texture::TextureCreateInfo texture_create_info {
                 .target = GL_TEXTURE_2D_ARRAY,
                 .width = TEXTURE_SIZE,
                 .height = TEXTURE_SIZE,
                 .layer_path_map = block_type_path_map,
-                .num_textures = 11,
+                .num_textures = 12,
             };
             ResourceManager::create_resource<Texture>("greedy_texture_array", texture_create_info)
                 .bind();

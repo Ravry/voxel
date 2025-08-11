@@ -28,8 +28,6 @@ namespace Voxel {
     }
 
     float Noise::fetch_cave(float x, float y, float z) {
-        return normalize_noise(terrain_noise.GetNoise(x, y, z));
+        return normalize_noise(terrain_noise.GetNoise(x *.8f, y*.8f, z*.8f));
     }
-
-
 }
