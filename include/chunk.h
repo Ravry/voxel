@@ -13,11 +13,11 @@ namespace Voxel {
 
         class Chunk {
         public:
-            static std::shared_ptr<Chunk> create(int* height_map, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position);
+            static std::shared_ptr<Chunk> create(int* height_map, Noise& noise, glm::ivec3 position);
 
             Chunk() = default;
-            Chunk(int* height_map, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position);
-            void build_mesh();
+            Chunk(int* height_map, Noise& noise, glm::ivec3 position);
+            void build_mesh(int* height_map, std::vector<glm::ivec2>& tree_positions);
             void render();
 
             glm::ivec3 position;

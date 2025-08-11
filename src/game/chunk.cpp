@@ -28,13 +28,13 @@ namespace Voxel::Game {
 
     static std::unordered_map<ChunkPos, std::shared_ptr<Chunk>, ChunkPosHash> chunks;
 
-    std::shared_ptr<Chunk> Chunk::create(int* height_map, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) {
-        std::shared_ptr<Chunk> chunk = std::make_shared<Chunk>(height_map, tree_positions, noise, position);
+    std::shared_ptr<Chunk> Chunk::create(int* height_map, Noise& noise, glm::ivec3 position) {
+        std::shared_ptr<Chunk> chunk = std::make_shared<Chunk>(height_map, noise, position);
         chunks[ChunkPos {position.x, position.y, position.z}] = chunk;
         return chunk;
     }
 
-    Chunk::Chunk(int* height_map, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) : position(position) {
+    Chunk::Chunk(int* height_map, Noise& noise, glm::ivec3 position) : position(position) {
         auto set_block = [&](int x, int y, int z, BlockType block) {
             data[x + (y * SIZE) + (z * SIZE * SIZE)] = block;
             int16_t bit {0};
@@ -42,9 +42,9 @@ namespace Voxel::Game {
                 bit = 1;
                 is_empty = false;
             }
-            uint16_t& row1 = voxels[z + (y * SIZE)] |= bit << x;;
-            uint16_t& row2 = voxels[x  + (y * SIZE) + (SIZE * SIZE)] |= bit << z;;
-            uint16_t& row3 = voxels[x  + (z * SIZE) + ((SIZE * SIZE) * 2)] |= bit << y;;
+            uint16_t& row1 = voxels[z + (y * SIZE)] |= bit << x;
+            uint16_t& row2 = voxels[x  + (y * SIZE) + (SIZE * SIZE)] |= bit << z;
+            uint16_t& row3 = voxels[x  + (z * SIZE) + ((SIZE * SIZE) * 2)] |= bit << y;
         };
 
         for (uint16_t y = 0; y < SIZE; y++) {
@@ -74,6 +74,46 @@ namespace Voxel::Game {
                 }
             }
         }
+    }
+
+    void Chunk::build_mesh(int* height_map, std::vector<glm::ivec2>& tree_positions) {
+        if (built) return;
+
+        Chunk* neighbor_chunks[6] {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+
+        ChunkPos chunk_left_index {position.x - SIZE, position.y, position.z};
+        if (chunks.find(chunk_left_index) != chunks.end()) neighbor_chunks[0] = chunks[chunk_left_index].get();
+        else return;
+
+        ChunkPos chunk_right_index { position.x + SIZE, position.y, position.z };
+        if (chunks.find(chunk_right_index) != chunks.end()) neighbor_chunks[1] = chunks[chunk_right_index].get();
+        else return;
+
+        ChunkPos chunk_front_index { position.x, position.y, position.z - SIZE };
+        if (chunks.find(chunk_front_index) != chunks.end()) neighbor_chunks[2] = chunks[chunk_front_index].get();
+        else return;
+
+        ChunkPos chunk_back_index { position.x, position.y, position.z + SIZE };
+        if (chunks.find(chunk_back_index) != chunks.end()) neighbor_chunks[3] = chunks[chunk_back_index].get();
+        else return;
+
+        ChunkPos chunk_bottom_index { position.x, position.y - SIZE, position.z };
+        if (chunks.find(chunk_bottom_index) != chunks.end()) neighbor_chunks[4] = chunks[chunk_bottom_index].get();
+
+        ChunkPos chunk_top_index { position.x, position.y + SIZE, position.z };
+        if (chunks.find(chunk_top_index) != chunks.end()) neighbor_chunks[5] = chunks[chunk_top_index].get();
+
+        auto set_block = [&](int x, int y, int z, BlockType block) {
+            data[x + (y * SIZE) + (z * SIZE * SIZE)] = block;
+            int16_t bit {0};
+            if (block != BlockType::Air) {
+                bit = 1;
+                is_empty = false;
+            }
+            uint16_t& row1 = voxels[z + (y * SIZE)] |= bit << x;
+            uint16_t& row2 = voxels[x  + (y * SIZE) + (SIZE * SIZE)] |= bit << z;
+            uint16_t& row3 = voxels[x  + (z * SIZE) + ((SIZE * SIZE) * 2)] |= bit << y;
+        };
 
         const int tree_height = 2 + rand() % 3;
         const int leafs_height = 4;
@@ -104,34 +144,6 @@ namespace Voxel::Game {
                 }
             }
         }
-    }
-
-    void Chunk::build_mesh() {
-        if (built) return;
-
-        Chunk* neighbor_chunks[6] {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-
-        ChunkPos chunk_left_index {position.x - SIZE, position.y, position.z};
-        if (chunks.find(chunk_left_index) != chunks.end()) neighbor_chunks[0] = chunks[chunk_left_index].get();
-        else return;
-
-        ChunkPos chunk_right_index { position.x + SIZE, position.y, position.z };
-        if (chunks.find(chunk_right_index) != chunks.end()) neighbor_chunks[1] = chunks[chunk_right_index].get();
-        else return;
-
-        ChunkPos chunk_front_index { position.x, position.y, position.z - SIZE };
-        if (chunks.find(chunk_front_index) != chunks.end()) neighbor_chunks[2] = chunks[chunk_front_index].get();
-        else return;
-
-        ChunkPos chunk_back_index { position.x, position.y, position.z + SIZE };
-        if (chunks.find(chunk_back_index) != chunks.end()) neighbor_chunks[3] = chunks[chunk_back_index].get();
-        else return;
-
-        ChunkPos chunk_bottom_index { position.x, position.y - SIZE, position.z };
-        if (chunks.find(chunk_bottom_index) != chunks.end()) neighbor_chunks[4] = chunks[chunk_bottom_index].get();
-
-        ChunkPos chunk_top_index { position.x, position.y + SIZE, position.z };
-        if (chunks.find(chunk_top_index) != chunks.end()) neighbor_chunks[5] = chunks[chunk_top_index].get();
 
         mesh = std::make_shared<Mesh>(voxels, neighbor_chunks, SIZE);
         built = true;

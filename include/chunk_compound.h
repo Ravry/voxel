@@ -13,6 +13,7 @@ namespace Voxel::Game {
 
         glm::vec3 position;
     private:
+        int height_map[SIZE * SIZE];
         std::vector<std::shared_ptr<Chunk>> chunks;
     };
 }

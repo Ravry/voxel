@@ -6,6 +6,7 @@
 - [X] Trees
 - [X] ImGUI Support
 - [ ] Multithreaded Chunk-Generation
+- [ ] Storing Block-Type-Data in Chunk_Compound and passing part of it to the SSBO (per chunk) 
 - [ ] Biomes and better Terrain-Generation
 - [ ] Skybox
 - [ ] Custom Framebuffer (Anti-Aliasing, SSAO etc.)
