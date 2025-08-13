@@ -13,9 +13,9 @@ namespace Voxel::Game {
         };
 
         for (int i {0}; i < num_chunks_per_compound; i++) {
-            std::shared_ptr<Chunk> chunk = Chunk::create(height_map, block_types, tree_positions, noise, glm::ivec3(position.x, i * SIZE, position.z));
-            if (!chunk->is_empty)
-                chunks.push_back(std::move(chunk));
+            Chunk* chunk = Chunk::create(height_map, block_types, tree_positions, noise, glm::ivec3(position.x, i * SIZE, position.z));
+            if (!(chunk->is_empty))
+                chunks.push_back(chunk);
         }
     }
 

@@ -15,6 +15,6 @@ namespace Voxel::Game {
     private:
         int height_map[SIZE * SIZE];
         BlockType block_types[SIZE * (SIZE * num_chunks_per_compound) * SIZE] {};
-        std::vector<std::shared_ptr<Chunk>> chunks;
+        std::vector<Chunk*> chunks;
     };
 }

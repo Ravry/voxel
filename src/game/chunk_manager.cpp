@@ -24,7 +24,7 @@ namespace Voxel::Game {
 
     static std::unordered_map<int64_t, std::unique_ptr<ChunkCompound>> chunks_cached;
 
-    static std::unordered_map<int64_t, std::unique_ptr<ChunkCompound>> chunks_render;
+    static std::unordered_map<int64_t, ChunkCompound*> chunks_render;
     static std::mutex chunks_render_mutex;
 
     static Noise noise;
@@ -33,32 +33,34 @@ namespace Voxel::Game {
         while (!worker_should_exit) {
             std::unique_lock<std::mutex> lock(chunks_requested_mutex);
             worker_cv.wait(lock, [] { return !chunks_requested.empty() || worker_should_exit; });
-            std::lock_guard<std::mutex> lock_render(chunks_render_mutex);
-
-            for (auto& chunk : chunks_render) {
-                chunks_cached[chunk.first] = std::move(chunk.second);
-            }
-            chunks_render.clear();
-
+            std::vector<int64_t> _chunk_requests;
             while (!chunks_requested.empty()) {
-                int64_t chunk_key = chunks_requested.front();
+                _chunk_requests.push_back(chunks_requested.front());
                 chunks_requested.pop();
-
-                if (chunks_cached.contains(chunk_key)) {
-                    chunks_render[chunk_key] = std::move(chunks_cached[chunk_key]);
-                    chunks_cached.erase(chunk_key);
-                    continue;
-                }
-
-                glm::vec3 pos = chunk_key_to_position(chunk_key);
-                chunks_render[chunk_key] = std::make_unique<ChunkCompound>(noise, pos);
-            }
-
-
-            for (auto& chunk : chunks_render) {
-                chunk.second->build_chunk_meshes();
             }
             lock.unlock();
+
+            std::unordered_map<int64_t, ChunkCompound*> _chunks_new;
+            {
+                for (int64_t chunk_key : _chunk_requests) {
+                    if (!chunks_cached.contains(chunk_key)) {
+                        chunks_cached[chunk_key] = std::make_unique<ChunkCompound>(noise, chunk_key_to_position(chunk_key));
+                    }
+                    _chunks_new[chunk_key] = chunks_cached[chunk_key].get();
+                }
+            }
+
+            for (auto& chunk : _chunks_new) {
+                chunk.second->build_chunk_meshes();
+            }
+
+            {
+                std::lock_guard<std::mutex> lock_render(chunks_render_mutex);
+                chunks_render.clear();
+                for (auto& chunk : _chunks_new) {
+                    chunks_render[chunk.first] = chunk.second;
+                }
+            }
         }
     }
 
@@ -84,9 +86,10 @@ namespace Voxel::Game {
     }
 
     void ChunkManager::render_chunk_compounds(Camera& camera) {
-        std::lock_guard<std::mutex> lock_render(chunks_render_mutex);
         Camera::Plane frustum[6];
         camera.get_frustum(frustum);
+
+        std::lock_guard<std::mutex> lock_render(chunks_render_mutex);
         for (auto& chunk : chunks_render) {
             if (camera.is_box_in_frustum(frustum, chunk.second->position, chunk.second->position + glm::vec3(16.f, 16.f * 16.f, 16.f)))
                 chunk.second->render();
@@ -95,7 +98,6 @@ namespace Voxel::Game {
 
     void ChunkManager::on_new_chunk_entered(glm::ivec3 position_chunk_space) {
         const int render_distance_squared = chunk_render_distance * chunk_render_distance;
-        // LOG("ChunkManager::on_new_chunk_entered");
         {
             std::lock_guard<std::mutex> lock(chunks_requested_mutex);
             for (int x = -chunk_render_distance; x <= chunk_render_distance; x++) {
@@ -106,6 +108,7 @@ namespace Voxel::Game {
                 }
             }
         }
+
         worker_cv.notify_one();
     }
 }

@@ -20,7 +20,7 @@ namespace Voxel::Gizmo {
             0, 1, 1,
             1, 1, 1,
         };
-        vbo.data(line_vertices, sizeof(line_vertices));
+        vbo.data(line_vertices, sizeof(line_vertices), GL_STATIC_DRAW);
         unsigned int line_indices[] {
             0, 1,
             1, 3,
@@ -37,7 +37,7 @@ namespace Voxel::Gizmo {
             2, 6,
             3, 7,
         };
-        ebo.data(line_indices, sizeof(line_indices));
+        ebo.data(line_indices, sizeof(line_indices), GL_STATIC_DRAW);
         vao.attrib(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         vao.unbind();
         vbo.unbind();
@@ -67,13 +67,13 @@ namespace Voxel::Gizmo {
             0, 1, 0,
             0, 0, 1,
         };
-        vbo.data(line_vertices, sizeof(line_vertices));
+        vbo.data(line_vertices, sizeof(line_vertices), GL_STATIC_DRAW);
         unsigned int line_indices[] {
             0, 1,
             0, 2,
             0, 3
         };
-        ebo.data(line_indices, sizeof(line_indices));
+        ebo.data(line_indices, sizeof(line_indices), GL_STATIC_DRAW);
         vao.attrib(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         vao.unbind();
         vbo.unbind();

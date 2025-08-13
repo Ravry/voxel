@@ -16,10 +16,10 @@ namespace Voxel {
             ~VBO();
             void bind() const override;
             void unbind() const override;
-            void data(float* data, size_t data_size);
-            void mapped_data(uint32_t* data, size_t data_size);
-        private:
-            uint32_t* buffer_memory_ptr;
+            void data(float* data, size_t data_size, GLenum usage);
+            void mapped_data(void* data, size_t data_size);
+            void sub_data(void* data, size_t data_size);
+            void* buffer_memory_ptr;
     };
 
     class EBO : public Buffer {
@@ -28,7 +28,10 @@ namespace Voxel {
             ~EBO();
             void bind() const override;
             void unbind() const override;
-            void data(unsigned int* data, size_t data_size);
+            void data(void* data, size_t data_size, GLenum usage);
+            void mapped_data(void* data, size_t data_size);
+            void sub_data(void* data, size_t data_size);
+            void* buffer_memory_ptr;
     };
 
     class VAO : public Buffer {

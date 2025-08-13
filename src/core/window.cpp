@@ -32,16 +32,20 @@ namespace Voxel {
         glfwSwapInterval(0);
 
         renderer = std::make_unique<Game::Renderer>(window, width, height);
+
+        LOG("renderer: {}"  ,   (const char*)glGetString(GL_RENDERER));
+        LOG("vendor: {}"    ,   (const char*)glGetString(GL_VENDOR));
+        LOG("version: {}"   ,   (const char*)glGetString(GL_VERSION));
     }
 
     Window::~Window()
     {
+        glfwDestroyWindow(window);
+        glfwTerminate();
+
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
-
-        glfwDestroyWindow(window);
-        glfwTerminate();
     }
 
     void Window::run()

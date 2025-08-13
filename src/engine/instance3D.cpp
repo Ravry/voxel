@@ -12,7 +12,7 @@ namespace Voxel {
         ebo.bind();
 
         vbo.mapped_data(mesh->vertices.data(), mesh->vertices.size() * sizeof(uint32_t));
-        ebo.data(mesh->indices.data(), mesh->indices.size() * sizeof(unsigned int));
+        ebo.data(mesh->indices.data(), mesh->indices.size() * sizeof(unsigned int), GL_STATIC_DRAW);
 
         vao.attribi(0, 1, GL_UNSIGNED_INT, sizeof(uint32_t), (void*)0);
 

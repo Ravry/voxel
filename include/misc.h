@@ -1,6 +1,7 @@
 #pragma once
 
 namespace Voxel::Game {
+    //NOTE: LSB is indicator for multi-image-block-types
     enum BlockType : unsigned int {
         Air = 0b0,
         Dirt = 0b10,

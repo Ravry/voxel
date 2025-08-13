@@ -15,6 +15,7 @@ namespace Voxel {
         public:
             Renderer(GLFWwindow* window, float width, float height);
             void update(GLFWwindow* window, float delta_time);
+            void draw_imgui_stuff();
             void render();
             void refactor(int width, int height);
             void render_axis_gizmo(VAO& vao, Shader& shader);

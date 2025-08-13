@@ -17,10 +17,11 @@ namespace Voxel::Game {
         ~ChunkManager();
         void update(glm::ivec3 position);
         void render_chunk_compounds(Camera& camera);
+
         static void worker_func();
     private:
         void on_new_chunk_entered(glm::ivec3 chunk_space_position);
     private:
-        int chunk_render_distance {12};
+        int chunk_render_distance {16};
     };
 }

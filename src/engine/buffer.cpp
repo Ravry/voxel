@@ -20,18 +20,21 @@ namespace Voxel {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
-    void VBO::data(float *data, size_t data_size)
+    void VBO::data(float *data, size_t data_size, GLenum usage)
     {
-        glBufferData(GL_ARRAY_BUFFER, data_size, data, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, data_size, data, usage);
     }
 
-    void VBO::mapped_data(uint32_t* data, size_t data_size)
+    void VBO::mapped_data(void* data, size_t data_size)
     {
         GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
         glBufferStorage(GL_ARRAY_BUFFER, data_size, data, flags);
-        buffer_memory_ptr = (uint32_t*)glMapBufferRange(GL_ARRAY_BUFFER, 0, data_size, flags);
+        buffer_memory_ptr = (void*)glMapBufferRange(GL_ARRAY_BUFFER, 0, data_size, flags);
     }
 
+    void VBO::sub_data(void* data, size_t data_size) {
+        glBufferSubData(GL_ARRAY_BUFFER, 0, data_size, data);
+    }
 
 
 
@@ -52,13 +55,19 @@ namespace Voxel {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
-    void EBO::data(unsigned int *data, size_t data_size)
-    {
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, data_size, data, GL_STATIC_DRAW);
+    void EBO::data(void* data, size_t data_size, GLenum usage) {
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, data_size, data, usage);
     }
 
+    void EBO::mapped_data(void* data, size_t data_size) {
+        GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+        glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, data_size, data, flags);
+        buffer_memory_ptr = (void*)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, data_size, flags);
+    }
 
-
+    void EBO::sub_data(void* data, size_t data_size) {
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, data_size, data);
+    }
 
     VAO::VAO() {
         glGenVertexArrays(1, &id);
