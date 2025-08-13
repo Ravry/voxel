@@ -64,23 +64,24 @@ namespace Voxel {
         position += move; 
 
         matrix = glm::lookAt(position, position + cameraFront, cameraUp);
+
+        get_frustum(frustum);
     }
 
     void Camera::refactor(float width, float height) {
         projection = glm::perspective(glm::radians(60.f), width/height, .01f, 1000.f);
     }
 
-
-    void normalizePlane(Camera::Plane &plane) {
-        float mag = sqrt(plane.a * plane.a + plane.b * plane.b + plane.c * plane.c);
-        plane.a /= mag;
-        plane.b /= mag;
-        plane.c /= mag;
-        plane.d /= mag;
-    }
-
     void Camera::get_frustum(Plane* frustum) {
         glm::mat4 clip = projection * matrix;
+
+        auto normalizePlane = [](Plane &plane) {
+            float mag = sqrt(plane.a * plane.a + plane.b * plane.b + plane.c * plane.c);
+            plane.a /= mag;
+            plane.b /= mag;
+            plane.c /= mag;
+            plane.d /= mag;
+        };
 
         // Left plane
         frustum[0].a = clip[0][3] + clip[0][0];

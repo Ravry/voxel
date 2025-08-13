@@ -37,7 +37,7 @@ namespace Voxel::Game {
         return ptr;
     }
 
-    void Chunk::generate_trees(int* height_map, std::vector<glm::ivec2>& tree_positions) {
+    void Chunk::generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions) {
         const int stem_height = 2 + rand() % 3;
         const int leafs_height = 3 + rand() % 2;
         for (auto& tree_position : tree_positions) {
@@ -47,6 +47,10 @@ namespace Voxel::Game {
                 break;
 
             int ground_y_chunk_space = (ground_y % SIZE) + 1;
+
+
+            if (noise.fetch_cave(position.x + tree_position.x, position.y + ground_y_chunk_space, position.z + tree_position.y) >= .7f)
+                continue;
 
             for (int h = 0; h < stem_height; h++) {
                 int y = ground_y_chunk_space + h;
@@ -64,7 +68,6 @@ namespace Voxel::Game {
         }
     }
 
-
     void Chunk::set_block(int x, int y, int z, BlockType block) {
         block_types_ptr[x + (y * SIZE) + (z * SIZE * SIZE)] = block;
         int16_t bit {0};
@@ -79,9 +82,10 @@ namespace Voxel::Game {
 
     Chunk::Chunk(int* height_map, BlockType* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) : position(position), block_types_ptr(&block_types[(position.y * SIZE * SIZE)])
     {
-        generate_trees(height_map, tree_positions);
+        generate_trees(noise, height_map, tree_positions);
 
-        for (uint16_t y = 0; y < SIZE; y++) {
+        for (uint16_t y = 0; y < SIZE; y++)
+        {
             for (uint16_t z = 0; z < SIZE; z++)
             {
                 for (uint16_t x = 0; x < SIZE; x++)
@@ -91,9 +95,7 @@ namespace Voxel::Game {
 
                     BlockType block = block_types_ptr[x + (y * SIZE) + (z * SIZE * SIZE)];
                     if (block == BlockType::Air) {
-                        if (world_space_position_y == 0) {
-                            block = BlockType::Bedrock;
-                        }
+                        if (world_space_position_y == 0) block = BlockType::Bedrock;
                         else if (world_space_position_y == noise_value) {
                             if (world_space_position_y > 128) block = BlockType::Snow;
                             else if (world_space_position_y > 96) block = BlockType::Stone;
@@ -101,8 +103,11 @@ namespace Voxel::Game {
                         }
                         else if (world_space_position_y < noise_value) {
                             if (noise.fetch_cave(position.x + x, position.y + y, position.z + z) < .7f) {
-                                block = BlockType::Stone;
+                                if (world_space_position_y > noise_value - 2) block = BlockType::Dirt;
+                                else if (world_space_position_y < 20 && ((float)rand()/RAND_MAX) < .01 ) block = BlockType::Diamond;
+                                else block = BlockType::Stone;
                             }
+
                         }
                     }
 
@@ -151,9 +156,7 @@ namespace Voxel::Game {
 
         if (!built) return;
 
-        if (!buffer_allocator) {
-            buffer_allocator = std::make_unique<BufferAllocator>();
-        }
+        if (!buffer_allocator) buffer_allocator = std::make_unique<BufferAllocator>();
 
         if (!allocated && mesh->triangles > 0) {
             buffer_allocator->allocate_buffer(slot);
@@ -178,5 +181,4 @@ namespace Voxel::Game {
         allocated = false;
         buffer_allocator->free_buffer(slot);
     }
-
 }

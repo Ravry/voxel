@@ -10,7 +10,8 @@ namespace Voxel::Game {
         Grass = 0b1001,
         Wood = 0b1111,
         Leafs = 0b10100,
-        Bedrock = 0b10110,
+        Diamond = 0b10110,
+        Bedrock = 0b11000,
         MaxValue = Bedrock
     };
 

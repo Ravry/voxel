@@ -92,13 +92,10 @@ namespace Voxel::Game {
     }
 
     void ChunkManager::render_chunk_compounds(Camera& camera) {
-        Camera::Plane frustum[6];
-        camera.get_frustum(frustum);
-
         std::lock_guard<std::mutex> lock_render(chunks_render_mutex);
         for (auto& chunk : chunks_render) {
-            if (camera.is_box_in_frustum(frustum, chunk.second->position, chunk.second->position + glm::vec3(16.f, 16.f * 16.f, 16.f)))
-                chunk.second->render();
+            if (camera.is_box_in_frustum(camera.frustum, chunk.second->position, chunk.second->position + glm::vec3(16.f, 16.f * num_chunks_per_compound, 16.f)))
+                chunk.second->render(camera);
         }
     }
 

@@ -29,7 +29,7 @@ namespace Voxel {
             uint16_t voxels[SIZE * SIZE * 3] = {};
         private:
             void set_block(int x, int y, int z, BlockType block);
-            void generate_trees(int* height_map, std::vector<glm::ivec2>& tree_positions);
+            void generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions);
             BlockType* block_types_ptr {nullptr};
             bool built {false};
             unsigned int slot {0};

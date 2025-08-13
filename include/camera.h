@@ -12,6 +12,10 @@ namespace Voxel {
             FreeCam,
         };
 
+        struct Plane {
+            float a, b, c, d; // Plane equation: ax + by + cz + d = 0
+        };
+
         private:
             float yaw {90.f};
             float pitch {0.f};
@@ -20,19 +24,15 @@ namespace Voxel {
             float speed_multiplier {1.f};
 
         public:
+            Plane frustum[6];
             glm::vec3 position;
             glm::vec3 front;
         public:
             Camera(float width, float height, glm::vec3 position);
             void update(GLFWwindow* window, float delta_time);
             void refactor(float width, float height);
-
-            struct Plane {
-                float a, b, c, d; // Plane equation: ax + by + cz + d = 0
-            };
             void get_frustum(Plane* planes);
             bool is_box_in_frustum(const Plane planes[6], const glm::vec3& min, const glm::vec3& max);
-
             glm::mat4 get_projection() { return projection; }
     };
 }

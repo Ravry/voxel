@@ -1,5 +1,6 @@
 #include "chunk_compound.h"
 
+
 namespace Voxel::Game {
     ChunkCompound::ChunkCompound(Noise& noise, glm::vec3 position) : position(position) {
         for (int z = 0; z < SIZE; z++) {
@@ -25,9 +26,10 @@ namespace Voxel::Game {
         }
     }
 
-    void ChunkCompound::render() {
+    void ChunkCompound::render(Camera& camera) {
         for (const auto& chunk : chunks) {
-            chunk->render();
+            if (camera.is_box_in_frustum(camera.frustum, chunk->position, chunk->position + glm::ivec3(16.f)))
+                chunk->render();
         }
     }
 

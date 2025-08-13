@@ -55,7 +55,8 @@ namespace Voxel::Game {
             { BlockType::Snow       >> 1, { ASSETS_DIR "textures/snow.png"} },
             { BlockType::Grass      >> 1, { ASSETS_DIR "textures/dirt.png", ASSETS_DIR "textures/grass_side.png", ASSETS_DIR "textures/grass.png" } },
             { BlockType::Wood       >> 1, { ASSETS_DIR "textures/wood_top.png", ASSETS_DIR "textures/wood.png", ASSETS_DIR "textures/wood_top.png"} },
-            { BlockType::Leafs      >> 1, { ASSETS_DIR "textures/leafs.png" }},
+            { BlockType::Leafs      >> 1, { ASSETS_DIR "textures/leafs.png" } },
+            { BlockType::Diamond    >> 1, { ASSETS_DIR "textures/diamond.png" } },
             { BlockType::Bedrock    >> 1, { ASSETS_DIR "textures/double_checkered.png" } },
         };
         Texture::TextureCreateInfo texture_create_info {
@@ -63,7 +64,7 @@ namespace Voxel::Game {
             .width = TEXTURE_SIZE,
             .height = TEXTURE_SIZE,
             .layer_path_map = block_type_path_map,
-            .num_textures = 12,
+            .num_textures = 13,
         };
         ResourceManager::create_resource<Texture>("greedy_texture_array", texture_create_info)
             .bind();
@@ -123,7 +124,7 @@ namespace Voxel::Game {
         ImGui::Begin("statistics");
 
         ImGui::Text((std::to_string(1./Time::Timer::delta_time) + std::string(" fps (") + std::to_string(Time::Timer::delta_time * 1000.) + std::string(" ms)")).c_str());
-        // ImGui::Text(std::format("cam: x={}; y={}; z={}", camera->position.x, camera->position.y, camera->position.z).c_str());
+        ImGui::Text(std::format("cam: x={}; y={}; z={}", camera->position.x, camera->position.y, camera->position.z).c_str());
         ImGui::Checkbox("show_gizmos", &Gizmo::show_gizmos);
 
         ImGui::End();
