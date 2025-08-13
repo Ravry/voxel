@@ -30,4 +30,11 @@ namespace Voxel::Game {
             chunk->render();
         }
     }
+
+    void ChunkCompound::unload() {
+        for (const auto& chunk : chunks) {
+            chunk->unload();
+        }
+    }
+
 }

@@ -19,6 +19,7 @@ namespace Voxel {
             Chunk(int* height_map, BlockType* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position);
             void build_mesh();
             void render();
+            void unload();
 
             glm::ivec3 position;
 

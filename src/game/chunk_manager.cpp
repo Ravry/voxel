@@ -56,7 +56,13 @@ namespace Voxel::Game {
 
             {
                 std::lock_guard<std::mutex> lock_render(chunks_render_mutex);
-                chunks_render.clear();
+                for (auto& chunk : chunks_render) {
+                    if (!_chunks_new.contains(chunk.first)) {
+                        chunk.second->unload();
+                        chunks_render.erase(chunk.first);
+                    }
+                }
+
                 for (auto& chunk : _chunks_new) {
                     chunks_render[chunk.first] = chunk.second;
                 }
