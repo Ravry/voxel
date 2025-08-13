@@ -120,4 +120,47 @@ namespace Voxel {
     void SSBO::data(unsigned int index, unsigned int *data, size_t data_size) {
         glBufferData(GL_SHADER_STORAGE_BUFFER, data_size, data, GL_STATIC_DRAW);
     }
+
+
+    RBO::RBO() {
+        glGenRenderbuffers(1, &id);
+    }
+
+    void RBO::bind() const {
+        glBindRenderbuffer(GL_RENDERBUFFER, id);
+    }
+
+    void RBO::unbind() const {
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    }
+
+    void RBO::storage(GLenum internal_format, unsigned int width, unsigned int height) {
+        glRenderbufferStorage(GL_RENDERBUFFER, internal_format, width, height);
+    }
+
+
+    FBO::FBO() {
+        glGenFramebuffers(1, &id);
+    }
+
+    FBO::~FBO() {
+        glDeleteFramebuffers(1, &id);
+    }
+
+    void FBO::bind() const {
+        glBindFramebuffer(GL_FRAMEBUFFER, id);
+    }
+
+    void FBO::unbind() const {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    void FBO::attach(GLenum attachment, Texture* texture) {
+        glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texture->get_id(), 0);
+        texture_attachments.push_back(texture);
+    }
+
+    void FBO::attach(GLenum attachment, RBO* render_buffer_object) {
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, render_buffer_object->get_id());
+    }
 }

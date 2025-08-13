@@ -12,6 +12,7 @@ namespace Voxel::Game {
 namespace Voxel {
     enum PrimitiveType {
         Triangle,
+        Quad,
         Cube
     };
 

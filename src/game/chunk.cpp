@@ -47,9 +47,7 @@ namespace Voxel::Game {
                 break;
 
             int ground_y_chunk_space = (ground_y % SIZE) + 1;
-
-
-            if (noise.fetch_cave(position.x + tree_position.x, position.y + ground_y_chunk_space, position.z + tree_position.y) >= .7f)
+            if (noise.fetch_cave(position.x + tree_position.x, position.y + ground_y_chunk_space - 1, position.z + tree_position.y) >= .7f)
                 continue;
 
             for (int h = 0; h < stem_height; h++) {
@@ -107,7 +105,6 @@ namespace Voxel::Game {
                                 else if (world_space_position_y < 20 && ((float)rand()/RAND_MAX) < .01 ) block = BlockType::Diamond;
                                 else block = BlockType::Stone;
                             }
-
                         }
                     }
 

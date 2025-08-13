@@ -51,19 +51,26 @@ namespace Voxel {
             }
             case GL_TEXTURE_2D: {
                 if (!create_info.data_buffer) {
-                    int w, h, channels;
-                    unsigned char* data = stbi_load(create_info.file_path, &w, &h, &channels, 4);
+                    if (create_info.file_path != nullptr) {
+                        int w, h, channels;
+                        unsigned char* data = stbi_load(create_info.file_path, &w, &h, &channels, 4);
 
-                    if (!data) {
-                        is_valid = false;
+                        if (!data) {
+                            is_valid = false;
+                        }
+
+                        stbi_image_free(data);
+                        break;
                     }
-
-                    stbi_image_free(data);
-                    break;
+                    else {
+                        glTexImage2D(target, 0, create_info.internal_format, create_info.width, create_info.height, 0, create_info.format, create_info.type, nullptr);
+                        break;
+                    }
                 }
 
                 glTexImage2D(target, 0, GL_RED, create_info.width, create_info.height, 0, GL_RED, GL_UNSIGNED_BYTE, create_info.data_buffer);
                 glGenerateMipmap(target);
+                break;
             }
         }
         unbind();

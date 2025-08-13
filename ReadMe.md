@@ -8,14 +8,16 @@
 - [X] Storing Block-Type-Data in Chunk_Compound and passing part of it to the SSBO (per chunk)
 - [X] (Multi/Dual)threaded Chunk-Generation
 - [X] Better Terrain-Generation
+- [X] Custom Frame-Buffer
+- [ ] Anti-Aliasing (MSAA etc.)
 - [ ] SSAO
 - [ ] Model Loading
 - [ ] Grass
 - [ ] Skybox
-- [ ] Custom Framebuffer (Anti-Aliasing, SSAO etc.)
 - [ ] Water
 - [ ] Player Movement (Physics)
 - [ ] Entities
 - [ ] Build and Destroy Blocks
 - [ ] Additional Dimensions (Nether etc.)
 - [ ] Menu
+- [ ] Particle System (Falling-Leafs etc.)

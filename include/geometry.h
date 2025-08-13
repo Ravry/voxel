@@ -1,42 +1,55 @@
 #pragma once
 
-namespace Voxel {
-    namespace Geometry {
-        namespace Triangle {
-            static float vertices[] {
-                -0.5f, -0.5f, 0.f, 0.f, 0.f,
-                 0.5f, -0.5f, 0.f, 1.f, 0.f,
-                 -.5f,  0.5f, 0.f, 0.f, 1.f,
-                 0.5f,  0.5f, 0.f, 1.f, 1.f
-            };
+namespace Voxel::Geometry {
+    //TODO: fix
+    namespace Triangle {
+        static float vertices[] {
+            -0.5f, -0.5f, 0.f, 0.f, 0.f,
+             0.5f, -0.5f, 0.f, 1.f, 0.f,
+             -.5f,  0.5f, 0.f, 0.f, 1.f,
+             0.5f,  0.5f, 0.f, 1.f, 1.f
+        };
 
-            static unsigned int indices[] {
-                0, 2, 1,
-                1, 2, 3
-            };
-        }
+        static unsigned int indices[] {
+            0, 2, 1,
+            1, 2, 3
+        };
+    }
 
-        namespace Cube {
-            static float vertices[] {
-                -0.5f, -0.5f,  0.5f,
-                 0.5f, -0.5f,  0.5f,
-                 0.5f,  0.5f,  0.5f,
-                -0.5f,  0.5f,  0.5f,
+    namespace Quad {
+        static float vertices[] {
+            -1.f, -1.f, 0.f, 0.f, 0.f,
+             1.f, -1.f, 0.f, 1.f, 0.f,
+            -1.f,  1.f, 0.f, 0.f, 1.f,
+             1.f,  1.f, 0.f, 1.f, 1.f
+        };
 
-                -0.5f, -0.5f, -0.5f,
-                 0.5f, -0.5f, -0.5f,
-                 0.5f,  0.5f, -0.5f,
-                -0.5f,  0.5f, -0.5f,
-            };
+        static unsigned int indices[] {
+            0, 1, 2,
+            1, 3, 2
+        };
+    }
 
-            static unsigned int indices[] {
-                0, 1, 2,  2, 3, 0,
-                1, 5, 6,  6, 2, 1,
-                5, 4, 7,  7, 6, 5,
-                4, 0, 3,  3, 7, 4,
-                3, 2, 6,  6, 7, 3,
-                4, 5, 1,  1, 0, 4,
-            };
-        }
+    namespace Cube {
+        static float vertices[] {
+            -0.5f, -0.5f,  0.5f,
+             0.5f, -0.5f,  0.5f,
+             0.5f,  0.5f,  0.5f,
+            -0.5f,  0.5f,  0.5f,
+
+            -0.5f, -0.5f, -0.5f,
+             0.5f, -0.5f, -0.5f,
+             0.5f,  0.5f, -0.5f,
+            -0.5f,  0.5f, -0.5f,
+        };
+
+        static unsigned int indices[] {
+            0, 1, 2,  2, 3, 0,
+            1, 5, 6,  6, 2, 1,
+            5, 4, 7,  7, 6, 5,
+            4, 0, 3,  3, 7, 4,
+            3, 2, 6,  6, 7, 3,
+            4, 5, 1,  1, 0, 4,
+        };
     }
 }

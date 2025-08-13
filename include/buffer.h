@@ -1,5 +1,6 @@
 #pragma once
 #include "glad/glad.h"
+#include "texture.h"
 
 namespace Voxel {
     class Buffer {
@@ -8,6 +9,7 @@ namespace Voxel {
         public:
             virtual void bind() const = 0;
             virtual void unbind() const = 0;
+            unsigned int get_id() const { return id; }
     };
 
     class VBO : public Buffer {
@@ -52,4 +54,29 @@ namespace Voxel {
         void unbind() const override;
         void data(unsigned int index, unsigned int *data, size_t data_size);
     };
+
+
+    class RBO: public Buffer {
+    public:
+        RBO();
+        ~RBO();
+        void bind() const override;
+        void unbind() const override;
+        void storage(GLenum internal_format, unsigned int width, unsigned int height);
+    };
+
+
+    class FBO : public Buffer {
+    private:
+    public:
+        FBO();
+        ~FBO();
+        void bind() const override;
+        void unbind() const override;
+        void attach(GLenum attachment, Texture* texture);
+        void attach(GLenum attachment, RBO* render_buffer_object);
+        
+        std::vector<Texture*> texture_attachments;
+    };
+
 }

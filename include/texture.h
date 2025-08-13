@@ -12,7 +12,10 @@ namespace Voxel {
     public:
         struct TextureCreateInfo {
             GLenum target;
-            const char* file_path;
+            GLenum internal_format;
+            GLenum format;
+            GLenum type;
+            const char* file_path {nullptr};
             unsigned int width;
             unsigned int height;
             GLint wrap {GL_REPEAT};
@@ -20,7 +23,7 @@ namespace Voxel {
             GLint mag_filter {GL_NEAREST};
             std::map<unsigned int, std::vector<std::string_view>> layer_path_map;
             unsigned int num_textures;
-            void* data_buffer;
+            void* data_buffer {nullptr};
         };
 
         static std::shared_ptr<Texture> fallback() {
@@ -35,6 +38,8 @@ namespace Voxel {
         void bind();
         void unbind();
         void destroy();
+
+        unsigned int get_id() { return id; }
 
     private:
         unsigned int id;

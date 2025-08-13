@@ -3,11 +3,15 @@
 #include "debug_helper.h"
 
 namespace Voxel {
+    //TODO: fix
     Mesh::Mesh(PrimitiveType primitive) {
         switch (primitive) {
             case PrimitiveType::Cube: {
                 triangles = sizeof(Geometry::Cube::indices)/sizeof(unsigned int);
                 break;
+            }
+            case PrimitiveType::Quad: {
+                triangles = sizeof(Geometry::Quad::indices)/sizeof(unsigned int);
             }
             default: {
                 triangles = sizeof(Geometry::Triangle::indices)/sizeof(unsigned int);
