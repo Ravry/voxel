@@ -1,4 +1,5 @@
 #pragma once
+#include <variant>
 #include "glad/glad.h"
 #include "texture.h"
 
@@ -62,21 +63,27 @@ namespace Voxel {
         ~RBO();
         void bind() const override;
         void unbind() const override;
-        void storage(GLenum internal_format, unsigned int width, unsigned int height);
+        void storage(GLenum internal_format, GLsizei samples, unsigned int width, unsigned int height);
     };
 
 
     class FBO : public Buffer {
     private:
     public:
+        struct FramebufferAttachment {
+            GLenum attachment;
+            GLenum target;
+            std::variant<Texture*, RBO*> attachment_buffer;
+        };
+
         FBO();
         ~FBO();
         void bind() const override;
         void unbind() const override;
-        void attach(GLenum attachment, Texture* texture);
-        void attach(GLenum attachment, RBO* render_buffer_object);
+        void attach(FramebufferAttachment* attachment);
+        void refactor(int width, int height);
         
-        std::vector<Texture*> texture_attachments;
+        std::vector<FramebufferAttachment*> attachments;
     };
 
 }

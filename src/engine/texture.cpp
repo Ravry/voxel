@@ -2,6 +2,8 @@
 #include <iostream>
 #include "texture.h"
 
+#include "log.h"
+
 namespace Voxel {
     Texture::Texture(const TextureCreateInfo& create_info) : target(create_info.target) {
         glGenTextures(1, &id);
@@ -72,8 +74,17 @@ namespace Voxel {
                 glGenerateMipmap(target);
                 break;
             }
+            case GL_TEXTURE_2D_MULTISAMPLE: {
+                glTexImage2DMultisample(target, create_info.samples, create_info.internal_format, create_info.width, create_info.height, GL_TRUE);
+                break;
+            }
         }
         unbind();
+    }
+
+    Texture::~Texture() {
+        glDeleteTextures(1, &id);
+        LOG("Texture::~Texture()[{}]", id);
     }
 
     void Texture::bind() {
@@ -82,9 +93,5 @@ namespace Voxel {
 
     void Texture::unbind() {
         glBindTexture(target, 0);
-    }
-
-    void Texture::destroy() {
-        glDeleteTextures(1, &id);
     }
 }

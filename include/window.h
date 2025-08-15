@@ -5,6 +5,8 @@
 #include <GLFW/glfw3.h>
 
 namespace Voxel {
+    extern const char* renderer_c_str;
+
     class Window {
     public:
         Window(int width, int height, std::string_view title);

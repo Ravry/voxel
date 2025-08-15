@@ -9,15 +9,15 @@
 - [X] (Multi/Dual)threaded Chunk-Generation
 - [X] Better Terrain-Generation
 - [X] Custom Frame-Buffer
+- [ ] Skybox
 - [ ] Anti-Aliasing (MSAA etc.)
 - [ ] SSAO
 - [ ] Model Loading
 - [ ] Grass
-- [ ] Skybox
 - [ ] Water
 - [ ] Player Movement (Physics)
 - [ ] Entities
 - [ ] Build and Destroy Blocks
+- [ ] Particle System (Falling-Leafs etc.)
 - [ ] Additional Dimensions (Nether etc.)
 - [ ] Menu
-- [ ] Particle System (Falling-Leafs etc.)

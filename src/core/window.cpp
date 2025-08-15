@@ -6,8 +6,8 @@
 
 namespace Voxel {
     double Time::Timer::delta_time {0};
-
     static std::unique_ptr<Game::Renderer> renderer;
+    const char* renderer_c_str;
 
     Window::Window(int width, int height, std::string_view title)
     {
@@ -20,7 +20,14 @@ namespace Voxel {
         glfwSetKeyCallback(window, Input::key_callback);
         glfwSetMouseButtonCallback(window, Input::mouse_button_callback);
         glfwSetCursorPosCallback(window, Input::mouse_callback);
-        glfwSetWindowSizeCallback(window, [] (GLFWwindow* window, int width, int height) { renderer->refactor(width, height); });
+        glfwSetWindowSizeCallback(window, [] (GLFWwindow* window, int width, int height) {
+            while (width <= 0 || height <= 0) {
+                glfwWaitEvents();
+                glfwGetWindowSize(window, &width, &height);
+            }
+
+            renderer->refactor(width, height);
+        });
 
         glfwMakeContextCurrent(window);
 
@@ -31,7 +38,8 @@ namespace Voxel {
 
         glfwSwapInterval(0);
 
-        LOG("renderer: {}"  ,   (const char*)glGetString(GL_RENDERER));
+        renderer_c_str = (const char*)glGetString(GL_RENDERER);
+        LOG("renderer: {}"  ,   renderer_c_str);
         LOG("vendor: {}"    ,   (const char*)glGetString(GL_VENDOR));
         LOG("version: {}"   ,   (const char*)glGetString(GL_VERSION));
 

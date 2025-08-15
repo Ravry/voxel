@@ -9,8 +9,6 @@
 
 namespace Voxel {
     namespace Game {
-        const int SIZE = sizeof(uint16_t) * 8;
-
         class Chunk {
         public:
             static Chunk* create(int* height_map, BlockType* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position);

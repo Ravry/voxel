@@ -86,8 +86,7 @@ namespace Voxel {
         glBindVertexArray(0);
     }
     
-    void VAO::attrib(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer)
-    {
+    void VAO::attrib(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) {
         glVertexAttribPointer(index, size, type, normalized, stride, pointer);
         glEnableVertexAttribArray(index);
     }
@@ -134,8 +133,9 @@ namespace Voxel {
         glBindRenderbuffer(GL_RENDERBUFFER, 0);
     }
 
-    void RBO::storage(GLenum internal_format, unsigned int width, unsigned int height) {
-        glRenderbufferStorage(GL_RENDERBUFFER, internal_format, width, height);
+    void RBO::storage(GLenum internal_format, GLsizei samples, unsigned int width, unsigned int height) {
+        if (samples > 1) glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, internal_format, width, height);
+        else glRenderbufferStorage(GL_RENDERBUFFER, internal_format, width, height);
     }
 
 
@@ -155,12 +155,13 @@ namespace Voxel {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
-    void FBO::attach(GLenum attachment, Texture* texture) {
-        glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texture->get_id(), 0);
-        texture_attachments.push_back(texture);
-    }
-
-    void FBO::attach(GLenum attachment, RBO* render_buffer_object) {
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, render_buffer_object->get_id());
+    void FBO::attach(FramebufferAttachment* attachment) {
+        if (std::holds_alternative<Texture*>(attachment->attachment_buffer)) {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, attachment->attachment, attachment->target, std::get<Texture*>(attachment->attachment_buffer)->get_id(), 0);
+        }
+        else {
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment->attachment, attachment->target, std::get<RBO*>(attachment->attachment_buffer)->get_id());
+        }
+        attachments.push_back(attachment);
     }
 }

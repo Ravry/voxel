@@ -79,7 +79,7 @@ namespace Voxel::Game {
         worker_should_exit = true;
         worker_cv.notify_one();
         worker_thread.join();
-        LOG("ChunkManager::~ChunkManager()");
+        // LOG("ChunkManager::~ChunkManager()");
     }
 
     void ChunkManager::update(glm::ivec3 position_world_space) {

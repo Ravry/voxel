@@ -72,7 +72,7 @@ namespace Voxel {
     }
 
     Shader::~Shader() {
-        LOG("Shader::~Shader()");
+        // LOG("Shader::~Shader()");
         glDeleteProgram(id);
     }
     
@@ -87,6 +87,7 @@ namespace Voxel {
 
 
     void Shader::reload() {
+        glDeleteProgram(id);
         load(vert_file.data(), frag_file.data());
     }
     

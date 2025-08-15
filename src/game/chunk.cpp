@@ -163,7 +163,9 @@ namespace Voxel::Game {
             allocated = true;
         }
 
-        ResourceManager::get_resource<Shader>("greedy").use().set_uniform_mat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(position)));
+        ResourceManager::get_resource<Shader>(SHADER_GREEDY_MESH)
+            .use()
+            .set_uniform_mat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(position)));
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer_allocator->ssbo_ids[slot]);
         glBindVertexArray(buffer_allocator->vertex_array_objects[slot]);
         glDrawElements(GL_TRIANGLES, mesh->indices.size(), GL_UNSIGNED_INT, (void*)0);

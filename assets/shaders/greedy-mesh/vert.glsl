@@ -8,7 +8,7 @@ uniform mat4 projection;
 
 out vec2 oUV;
 out vec3 oVertex;
-flat out vec3 oNormal;
+out vec3 oNormal;
 
 void main() {
     vec3 position = vec3((vertex >> 27u) & 0x1Fu, (vertex >> 22u) & 0x1Fu, (vertex >> 17u) & 0x1Fu);

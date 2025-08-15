@@ -1,6 +1,22 @@
 #pragma once
+#include <stdint.h>
 
 namespace Voxel::Game {
+    //TEXTURES
+    #define TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT "texture_framebuffer_color_attachment"
+    #define TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2 "texture_framebuffer_color_attachment2"
+    #define TEXTURE_FRAMEBUFFER_DEPTH_STENCIL_ATTACHMENT "texture_framebuffer_depth_stencil_attachment"
+
+    //SHADERS
+    #define SHADER_DEFAULT "shader_default"
+    #define SHADER_FRAMEBUFFER "shader_framebuffer"
+    #define SHADER_GREEDY_MESH "shader_greedy_mesh"
+
+    //OPTIONS
+    #define OPTION_MULTISAMPLING_ENABLED true
+
+    constexpr int SIZE = sizeof(uint16_t) * 8;
+
     //NOTE: LSB is indicator for multi-image-block-types
     enum BlockType : unsigned int {
         Air = 0b0,

@@ -24,6 +24,7 @@ namespace Voxel {
             std::map<unsigned int, std::vector<std::string_view>> layer_path_map;
             unsigned int num_textures;
             void* data_buffer {nullptr};
+            GLsizei samples;
         };
 
         static std::shared_ptr<Texture> fallback() {
@@ -35,9 +36,9 @@ namespace Voxel {
         }
 
         Texture(const TextureCreateInfo& create_info);
+        ~Texture();
         void bind();
         void unbind();
-        void destroy();
 
         unsigned int get_id() { return id; }
 
