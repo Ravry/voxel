@@ -1,10 +1,12 @@
 #include "camera.h"
 
+#include "log.h"
+
 namespace Voxel {
     static bool cursor_enabled = false;
 
     Camera::Camera(float width, float height, glm::vec3 position) : Transform(glm::vec3(0), glm::vec3(0), glm::vec3(1)), position(position) {
-        projection = glm::perspective(glm::radians(60.f), width/height, .01f, 1000.f);
+        projection = glm::perspective(glm::radians(60.f), width/height, .1f, 1000.f);
     }
 
     void Camera::update(GLFWwindow* window, float delta_time) {
@@ -43,6 +45,8 @@ namespace Voxel {
             input.y -= 1; 
         }
 
+        matrix = glm::translate(matrix, input);
+
         speed_multiplier = Input::is_key_held_down(GLFW_KEY_LEFT_SHIFT) ? 4.f : 1.f;
 
         if (glm::length(input) > 0) {
@@ -64,7 +68,6 @@ namespace Voxel {
         position += move; 
 
         matrix = glm::lookAt(position, position + cameraFront, cameraUp);
-
         get_frustum(frustum);
     }
 

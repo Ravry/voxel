@@ -9,10 +9,13 @@ namespace Voxel {
         glGenTextures(1, &id);
         bind();
 
-        glTexParameteri(target, GL_TEXTURE_WRAP_S, create_info.wrap);
-        glTexParameteri(target, GL_TEXTURE_WRAP_T, create_info.wrap);
-        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, create_info.min_filter);
-        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, create_info.mag_filter);
+        if (target != GL_TEXTURE_2D_MULTISAMPLE) {
+            glTexParameteri(target, GL_TEXTURE_WRAP_S, create_info.wrap);
+            glTexParameteri(target, GL_TEXTURE_WRAP_T, create_info.wrap);
+            glTexParameteri(target, GL_TEXTURE_WRAP_R, create_info.wrap);
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, create_info.min_filter);
+            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, create_info.mag_filter);
+        }
 
         switch (target) {
             case GL_TEXTURE_2D_ARRAY: {
@@ -76,6 +79,16 @@ namespace Voxel {
             }
             case GL_TEXTURE_2D_MULTISAMPLE: {
                 glTexImage2DMultisample(target, create_info.samples, create_info.internal_format, create_info.width, create_info.height, GL_TRUE);
+                break;
+            }
+            case GL_TEXTURE_CUBE_MAP: {
+                int w, h, channels;
+                uint8_t* data;
+                for (size_t i {0}; i < create_info.cubemap_files.size(); i++) {
+                    data = stbi_load(create_info.cubemap_files[i], &w, &h, &channels, 0);
+                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,create_info.internal_format, w, h, 0, create_info.format, create_info.type, data);
+                    stbi_image_free(data);
+                }
                 break;
             }
         }

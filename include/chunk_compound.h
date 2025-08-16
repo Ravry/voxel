@@ -10,7 +10,7 @@ namespace Voxel::Game {
     public:
         ChunkCompound(Noise& noise, glm::vec3 position);
         void build_chunk_meshes();
-        void render(Camera& camera);
+        void render(Camera& camera, bool frustum_cull);
         void unload();
 
         glm::vec3 position;

@@ -9,13 +9,14 @@
 - [X] (Multi/Dual)threaded Chunk-Generation
 - [X] Better Terrain-Generation
 - [X] Custom Frame-Buffer
-- [ ] Skybox
-- [ ] Anti-Aliasing (MSAA etc.)
+- [X] Anti-Aliasing (MSAA etc.)
+- [X] Skybox
+- [ ] Shadows
 - [ ] SSAO
+- [ ] Player Movement (Physics)
 - [ ] Model Loading
 - [ ] Grass
 - [ ] Water
-- [ ] Player Movement (Physics)
 - [ ] Entities
 - [ ] Build and Destroy Blocks
 - [ ] Particle System (Falling-Leafs etc.)

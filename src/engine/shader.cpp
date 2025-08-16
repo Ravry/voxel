@@ -1,5 +1,7 @@
 #include "shader.h"
 
+#include "misc.h"
+
 
 namespace Voxel {
     void check_status(unsigned int shader, GLenum pname) {
@@ -12,63 +14,59 @@ namespace Voxel {
         }
     }
 
-    void Shader::load(const char* vertex_shader_file, const char* fragment_shader_file) {
-        std::string vertex_shader_source_str, fragment_shader_source_str;
-
-        if (!std::filesystem::exists(vertex_shader_file)) {
-            throw std::runtime_error(std::string("Vertex shader file not found: ") + vertex_shader_file);
-        }
-        if (!std::filesystem::exists(fragment_shader_file)) {
-            throw std::runtime_error(std::string("Fragment shader file not found: ") + fragment_shader_file);
-        }
-
-        std::ifstream v_shader_file;
-        std::ifstream f_shader_file;
-
-        v_shader_file.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-        f_shader_file.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-
-        try {
-            v_shader_file.open(vertex_shader_file);
-            f_shader_file.open(fragment_shader_file);
-            std::stringstream vShaderStream, fShaderStream;
-            vShaderStream << v_shader_file.rdbuf();
-            fShaderStream << f_shader_file.rdbuf();
-            v_shader_file.close();
-            f_shader_file.close();
-            vertex_shader_source_str = vShaderStream.str();
-            fragment_shader_source_str = fShaderStream.str();
-        }
-        catch (std::ios_base::failure& e) {
-            LOG("ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ");
-            return;
-        }
-
-        const char* vertex_shader_source = vertex_shader_source_str.c_str();
-        const char* fragment_shader_source = fragment_shader_source_str.c_str();
-
-        unsigned int vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertex_shader, 1, &vertex_shader_source, 0);
-        glCompileShader(vertex_shader);
-        check_status(vertex_shader, GL_COMPILE_STATUS);
-
-        unsigned int fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragment_shader, 1, &fragment_shader_source, 0);
-        glCompileShader(fragment_shader);
-        check_status(fragment_shader, GL_COMPILE_STATUS);
-
+    void Shader::load() {
         id = glCreateProgram();
-        glAttachShader(id, vertex_shader);
-        glAttachShader(id, fragment_shader);
-        glLinkProgram(id);
-        check_status(id, GL_LINK_STATUS);
 
-        glDeleteShader(fragment_shader);
-        glDeleteShader(vertex_shader);
+        std::vector<unsigned int> shaders;
+        for (auto &[slot, file]: shader_files) {
+            std::string shader_source_str;
+
+            if (!std::filesystem::exists(file)) {
+                throw std::runtime_error(std::string("Vertex shader file not found: ") + file.data());
+            }
+
+            std::ifstream shader_file;
+            shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+            try {
+                shader_file.open(file.data());
+                std::stringstream ShaderStream;
+                ShaderStream << shader_file.rdbuf();
+                shader_file.close();
+                shader_source_str = ShaderStream.str();
+
+                const char *shader_source = shader_source_str.c_str();
+
+                unsigned int shader = glCreateShader(slot);
+                glShaderSource(shader, 1, &shader_source, 0);
+                glCompileShader(shader);
+                check_status(shader, GL_COMPILE_STATUS);
+
+                glAttachShader(id, shader);
+
+                shaders.push_back(shader);
+            } catch (std::ios_base::failure &e) {
+                LOG("ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ");
+                return;
+            }
+        }
+
+        glLinkProgram(id);
+        GLint success;
+        glGetProgramiv(id, GL_LINK_STATUS, &success);
+        if (!success) {
+            char infoLog[1024];
+            glGetProgramInfoLog(id, 1024, nullptr, infoLog);
+            LOG("SHADER LINK ERROR: {}", infoLog);
+        }
+
+        for (auto &shader: shaders) {
+            glDeleteShader(shader);
+        }
     }
 
-    Shader::Shader(const char* vertex_shader_file, const char* fragment_shader_file) : vert_file(vertex_shader_file), frag_file(fragment_shader_file) {
-        load(vertex_shader_file, fragment_shader_file);
+    Shader::Shader(const std::unordered_map<unsigned int, std::string_view> files) : shader_files(files) {
+        load();
     }
 
     Shader::~Shader() {
@@ -88,7 +86,7 @@ namespace Voxel {
 
     void Shader::reload() {
         glDeleteProgram(id);
-        load(vert_file.data(), frag_file.data());
+        load();
     }
     
     Shader& Shader::set_uniform_mat4(std::string_view name, glm::mat4 matrix)

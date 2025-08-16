@@ -25,6 +25,7 @@ namespace Voxel {
             unsigned int num_textures;
             void* data_buffer {nullptr};
             GLsizei samples;
+            std::vector<const char*> cubemap_files;
         };
 
         static std::shared_ptr<Texture> fallback() {

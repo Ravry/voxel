@@ -4,30 +4,62 @@ layout (location = 0) out vec4 color;
 
 uniform vec3 albedo;
 uniform sampler2DArray texture_array;
+uniform sampler2D shadow_map;
 
 layout(std430, binding = 0) buffer BlockData {
     uint[] blockTypes;
 } blockData;
 
-in vec2 oUV;
-in vec3 oVertex;
-in vec3 oNormal;
+in VS_OUT {
+    vec2 uv;
+    vec3 vertex;
+    vec3 normal;
+    vec4 frag_pos_light_space;
+} fs_in;
 
-uniform vec3 light_direction = vec3(.25, -.4, 0);
+uniform vec3 light_direction = vec3(0, -1.0, 0);
+
+float shadow_calculation(vec4 frag_pos) {
+    vec3 proj_coords = frag_pos.xyz / frag_pos.w;
+    proj_coords = proj_coords * .5 + .5;
+
+    float current_depth_from_light_pov = proj_coords.z;
+
+    float bias = 0.0005;
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadow_map, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(shadow_map, proj_coords.xy + vec2(x, y) * texelSize * 2.0).r;
+            shadow += current_depth_from_light_pov - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
+    if(proj_coords.z > 1.0)
+        shadow = 0.0;
+
+    return shadow;
+}
 
 void main() {
-    ivec3 block_coords = ivec3(floor(oVertex - (oNormal * 0.1)));
+    const float epsilon = 0.5;
+    ivec3 block_coords = ivec3(fs_in.vertex - normalize(fs_in.normal) * .01);
     block_coords = clamp(block_coords, ivec3(0), ivec3(15));
+
     uint block_type = blockData.blockTypes[block_coords.x + (block_coords.y * 16) + (block_coords.z * 16 * 16)];
 
     uint diff_faces = block_type & 0x1;
-    uint face = uint(round(dot(normalize(oNormal), vec3(0, 1, 0)) + 1));
+    uint face = uint(round(dot(normalize(fs_in.normal), vec3(0, 1, 0)) + 1));
     uint index_block_type = (block_type >> 1) + (diff_faces * face);
 
-    if (index_block_type == 0) discard;
+    vec3 texture_color = texture(texture_array, vec3(fs_in.uv, index_block_type)).rgb;
 
-    vec3 texture_color = texture(texture_array, vec3(oUV, index_block_type)).rgb;
+    float ambient = .4;
+    float diffuse = ((dot(fs_in.normal, -normalize(light_direction))) + 1.0) / 2.0;
+    float shadow = shadow_calculation(fs_in.frag_pos_light_space);
+    float lighting = ((1.0 - shadow) + ambient) * diffuse;
 
-    float diffuse = max(dot(oNormal, -normalize(light_direction)), .4);
-    color = vec4(texture_color * diffuse, 1.0);
+    color = vec4(lighting * texture_color, 1.0);
 }

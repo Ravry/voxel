@@ -85,13 +85,13 @@ namespace Voxel::Gizmo {
     }
 
     void render_axis_gizmo(VAO& vao, Camera& camera) {
-        glDisable(GL_DEPTH_TEST);
         vao.bind();
 
         glm::mat4 model = glm::scale(glm::translate(glm::mat4(1), (camera.position + camera.front)), glm::vec3(.05f));
 
         glLineWidth(4.0f);
         auto& shader = ResourceManager::get_resource<Shader>(SHADER_DEFAULT)
+            .use()
             .set_uniform_mat4("model", model)
             .set_uniform_vec3("albedo", glm::vec3(0, 0, 0));
 
@@ -110,6 +110,5 @@ namespace Voxel::Gizmo {
         glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, (void*)(4 * sizeof(unsigned)));
 
         vao.unbind();
-        glEnable(GL_DEPTH_TEST);
     }
 }

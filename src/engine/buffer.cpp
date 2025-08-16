@@ -164,4 +164,30 @@ namespace Voxel {
         }
         attachments.push_back(attachment);
     }
+
+
+    UBO::UBO(unsigned int binding_point, void *data, size_t size) {
+        glGenBuffers(1, &id);
+        bind();
+        glBufferData(GL_UNIFORM_BUFFER, size, data, GL_STATIC_DRAW);
+        unbind();
+        glBindBufferRange(GL_UNIFORM_BUFFER, binding_point, id, 0, size);
+    }
+
+    UBO::~UBO() {
+        glDeleteBuffers(1, &id);
+    }
+
+    void UBO::bind() const {
+        glBindBuffer(GL_UNIFORM_BUFFER, id);
+    }
+
+    void UBO::unbind() const {
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+
+    void UBO::sub_data(void *data, size_t size, long long offset) {
+        glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
+    }
+
 }

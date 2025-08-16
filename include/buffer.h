@@ -86,4 +86,13 @@ namespace Voxel {
         std::vector<FramebufferAttachment*> attachments;
     };
 
+    class UBO : public Buffer {
+    private:
+    public:
+        UBO(unsigned int binding_point, void *data, size_t size);
+        ~UBO();
+        void bind() const override;
+        void unbind() const override;
+        void sub_data(void* data, size_t size, long long offset);
+    };
 }

@@ -44,14 +44,14 @@ namespace Voxel {
     Mesh::Mesh(uint16_t* voxels, Game::Chunk** chunks, const std::size_t size)
     {
         #pragma region face_culling
-        uint16_t voxels_zy_top_face[size * size] = {};
-        uint16_t voxels_zy_bottom_face[size * size] = {};
+        std::vector<uint16_t> voxels_zy_top_face(size * size, 0);
+        std::vector<uint16_t> voxels_zy_bottom_face(size * size, 0);
 
-        uint16_t voxels_xz_right_face[size * size] = {};
-        uint16_t voxels_xz_left_face[size * size] = {};
+        std::vector<uint16_t> voxels_xz_right_face(size * size, 0);
+        std::vector<uint16_t> voxels_xz_left_face(size * size, 0);
 
-        uint16_t voxels_xz_front_face[size * size] = {};
-        uint16_t voxels_xz_back_face[size * size] = {};
+        std::vector<uint16_t> voxels_xz_front_face(size * size, 0);
+        std::vector<uint16_t> voxels_xz_back_face(size * size, 0);
 
         for (std::size_t i {0}; i < size; i++) {
             for (std::size_t j {0}; j < size; j++) {
@@ -110,9 +110,9 @@ namespace Voxel {
         #pragma endregion
 
         uint16_t** arrays = new uint16_t*[6] {
-            voxels_zy_top_face, voxels_zy_bottom_face,
-            voxels_xz_right_face, voxels_xz_left_face,
-            voxels_xz_front_face, voxels_xz_back_face,
+            voxels_zy_top_face.data(), voxels_zy_bottom_face.data(),
+            voxels_xz_right_face.data(), voxels_xz_left_face.data(),
+            voxels_xz_front_face.data(), voxels_xz_back_face.data(),
         };
 
         vertices.reserve(size * size * 4 * 6);
@@ -132,8 +132,8 @@ namespace Voxel {
                     if (row == 0) continue;
 
                     while (row != 0) {
-                        uint16_t x0 = std::__countr_zero(static_cast<unsigned>(row));
-                        uint16_t height = std::__countr_one(static_cast<unsigned>(row >> x0));
+                        uint16_t x0 = std::countr_zero(static_cast<unsigned>(row));
+                        uint16_t height = std::countr_one(static_cast<unsigned>(row >> x0));
                         uint16_t mask = ((1u << height) - 1) << x0;
 
                         uint16_t width {1};
@@ -190,8 +190,8 @@ namespace Voxel {
                     if (row == 0) continue;
 
                     while (row != 0) {
-                        uint16_t y0 = std::__countr_zero(static_cast<unsigned>(row));
-                        uint16_t height = std::__countr_one(static_cast<unsigned>(row >> y0));
+                        uint16_t y0 = std::countr_zero(static_cast<unsigned>(row));
+                        uint16_t height = std::countr_one(static_cast<unsigned>(row >> y0));
                         uint16_t mask = ((1u << height) - 1) << y0;
 
                         uint16_t width {1};
@@ -249,8 +249,8 @@ namespace Voxel {
                     if (row == 0) continue;
 
                     while (row != 0) {
-                        uint16_t y0 = std::__countr_zero(static_cast<unsigned>(row));
-                        uint16_t height = std::__countr_one(static_cast<unsigned>(row >> y0));
+                        uint16_t y0 = std::countr_zero(static_cast<unsigned>(row));
+                        uint16_t height = std::countr_one(static_cast<unsigned>(row >> y0));
                         uint16_t mask = ((1u << height) - 1) << y0;
 
                         uint16_t width {1};
@@ -292,7 +292,6 @@ namespace Voxel {
                             *index_ptr++ = triangles + 0; *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 2;
                             *index_ptr++ = triangles + 1; *index_ptr++ = triangles + 3; *index_ptr++ = triangles + 2;
                         }
-
                         *vertex_ptr++ = packed_vertex_data(x0f, y0f, z0f, norm_flip, 0, 0, 1, 0, height);
                         *vertex_ptr++ = packed_vertex_data(x0f, y1f, z0f, norm_flip, 0, 0, 1, 0, 0);
                         *vertex_ptr++ = packed_vertex_data(x1f, y0f, z0f, norm_flip, 0, 0, 1, width, height);

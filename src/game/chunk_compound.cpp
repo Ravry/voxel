@@ -26,10 +26,12 @@ namespace Voxel::Game {
         }
     }
 
-    void ChunkCompound::render(Camera& camera) {
+    void ChunkCompound::render(Camera& camera, bool frustum_cull) {
         for (const auto& chunk : chunks) {
-            if (camera.is_box_in_frustum(camera.frustum, chunk->position, chunk->position + glm::ivec3(16.f)))
-                chunk->render();
+            if (frustum_cull && !camera.is_box_in_frustum(camera.frustum, chunk->position, chunk->position + glm::ivec3(16.f)))
+                continue;
+
+            chunk->render();
         }
     }
 

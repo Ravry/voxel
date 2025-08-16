@@ -6,17 +6,29 @@
 namespace Voxel::Game {
     static bool debug {false};
 
+    const unsigned int SHADOW_MAP_SIZE = 1024;
+    static glm::mat4 shadow_map_projection_matrix;
+    static glm::mat4 shadow_map_view_matrix;
+
     static std::unique_ptr<FBO> msaa_framebuffer;
     static std::unique_ptr<FBO> intermediate_framebuffer;
+    static std::unique_ptr<FBO> shadow_map_fbo;
 
     static FBO::FramebufferAttachment framebuffer_color_attachment;
     static FBO::FramebufferAttachment framebuffer_depth_stencil_attachment;
-
     static FBO::FramebufferAttachment framebuffer_color_attachment2;
+    static FBO::FramebufferAttachment framebuffer_shadow_map_attachment;
 
     static std::unique_ptr<VAO> framebuffer_vao;
     static std::unique_ptr<VBO> framebuffer_vbo;
     static std::unique_ptr<EBO> framebuffer_ebo;
+
+
+    static std::unique_ptr<VAO> skybox_vao;
+    static std::unique_ptr<VBO> skybox_vbo;
+    static std::unique_ptr<EBO> skybox_ebo;
+
+    static std::unique_ptr<UBO> matrices_ubo;
 
     void create_attachments_for_msaa_framebuffer(unsigned int  width, unsigned int height) {
         Texture::TextureCreateInfo framebuffer_color_attachment_create_info {};
@@ -75,6 +87,36 @@ namespace Voxel::Game {
         intermediate_framebuffer->unbind();
     }
 
+    void create_attachments_for_shadow_map_framebuffer(unsigned int width, unsigned int height) {
+        Texture::TextureCreateInfo framebuffer_shadow_map_attachment_create_info {};
+        framebuffer_shadow_map_attachment_create_info.target = GL_TEXTURE_2D;
+        framebuffer_shadow_map_attachment_create_info.internal_format = GL_DEPTH_COMPONENT;
+        framebuffer_shadow_map_attachment_create_info.format = GL_DEPTH_COMPONENT;
+        framebuffer_shadow_map_attachment_create_info.type = GL_FLOAT;
+        framebuffer_shadow_map_attachment_create_info.width = (unsigned int)width;
+        framebuffer_shadow_map_attachment_create_info.height = (unsigned int)height;
+        framebuffer_shadow_map_attachment_create_info.min_filter = GL_NEAREST;
+        framebuffer_shadow_map_attachment_create_info.mag_filter = GL_NEAREST;
+        framebuffer_shadow_map_attachment_create_info.wrap = GL_CLAMP_TO_BORDER;
+        float border_color[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_color);
+
+        auto& framebuffer_shadow_map_attachment_texture = ResourceManager::create_resource<Texture>(TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT, framebuffer_shadow_map_attachment_create_info);
+
+        shadow_map_fbo->bind();
+        framebuffer_shadow_map_attachment = {
+            GL_DEPTH_ATTACHMENT, framebuffer_shadow_map_attachment_create_info.target, &framebuffer_shadow_map_attachment_texture
+        };
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
+        shadow_map_fbo->attach(&framebuffer_shadow_map_attachment);
+
+        if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            LOG("error -> framebuffer error: {}", std::to_string(status).c_str());
+
+        shadow_map_fbo->unbind();
+    }
+
     Renderer::Renderer(GLFWwindow* window, float width, float height) : width(width), height(height) {
         //IMGUI-INIT
         {
@@ -90,24 +132,39 @@ namespace Voxel::Game {
         {
             ResourceManager::create_resource<Shader>(
                 SHADER_DEFAULT,
-                ASSETS_DIR "shaders/default/vert.glsl",
-                ASSETS_DIR "shaders/default/frag.glsl"
-            );
-
-            ResourceManager::create_resource<Shader>(
-                SHADER_GREEDY_MESH,
-                ASSETS_DIR "shaders/greedy-mesh/vert.glsl",
-                ASSETS_DIR "shaders/greedy-mesh/frag.glsl"
+                std::unordered_map<unsigned int, std::string_view>{
+                    { GL_VERTEX_SHADER, ASSETS_DIR "shaders/default/vert.glsl" },
+                    { GL_FRAGMENT_SHADER, ASSETS_DIR "shaders/default/frag.glsl" }
+                }
             );
 
             ResourceManager::create_resource<Shader>(
                 SHADER_FRAMEBUFFER,
-                ASSETS_DIR "shaders/framebuffer/vert.glsl",
-                ASSETS_DIR "shaders/framebuffer/frag.glsl"
+                std::unordered_map<unsigned int, std::string_view> {
+                    { GL_VERTEX_SHADER, ASSETS_DIR "shaders/framebuffer/vert.glsl" },
+                    { GL_FRAGMENT_SHADER, ASSETS_DIR "shaders/framebuffer/frag.glsl" }
+                }
+            );
+
+            ResourceManager::create_resource<Shader>(
+                SHADER_SKYBOX_CUBEMAP,
+                std::unordered_map<unsigned int, std::string_view> {
+                    { GL_VERTEX_SHADER, ASSETS_DIR "shaders/cubemap/vert.glsl" },
+                    { GL_FRAGMENT_SHADER, ASSETS_DIR "shaders/cubemap/frag.glsl" }
+                }
+            );
+
+            ResourceManager::create_resource<Shader>(
+            SHADER_GREEDY_MESH,
+                std::unordered_map<unsigned int, std::string_view> {
+                    { GL_VERTEX_SHADER, ASSETS_DIR "shaders/greedy-mesh/vert.glsl" },
+                    { GL_FRAGMENT_SHADER, ASSETS_DIR "shaders/greedy-mesh/frag.glsl" },
+                    // { GL_GEOMETRY_SHADER, ASSETS_DIR "shaders/greedy-mesh/geom.glsl" }
+                }
             );
         }
 
-        //FRAMEBUFFER-INIT
+        //SCREEN-FRAMEBUFFER-INIT
         {
             msaa_framebuffer = std::make_unique<FBO>();
             create_attachments_for_msaa_framebuffer(width, height);
@@ -131,7 +188,62 @@ namespace Voxel::Game {
             framebuffer_vao->unbind();
             framebuffer_vbo->unbind();
             framebuffer_ebo->unbind();
+        }
 
+        //GENERAL-INIT
+        {
+            Gizmo::setup_axis_gizmo(vao_axis_gizmo);
+            camera = &ResourceManager::create_resource<Camera>("camera_game", width, height, glm::vec3(0, 64, 0));
+
+            chunk_manager = std::make_unique<ChunkManager>(camera->position);
+            matrices_ubo = std::make_unique<UBO>(0, nullptr, 2 * sizeof(glm::mat4));
+            matrices_ubo->bind();
+            matrices_ubo->sub_data((void*)glm::value_ptr(camera->get_projection()), sizeof(glm::mat4), 0);
+            matrices_ubo->unbind();
+        }
+
+        //SHADOW-FRAMEBUFFER-INIT
+        {
+            shadow_map_projection_matrix = glm::ortho(-50.f, 50.f, -50.f, 50.f, 1.f, 200.f);
+            shadow_map_view_matrix = glm::rotate(glm::translate(glm::mat4(1.f), glm::vec3(0, 0.f, -160.f)), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
+            shadow_map_fbo = std::make_unique<FBO>();
+            create_attachments_for_shadow_map_framebuffer(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+        }
+
+        //SKYBOX-INIT
+        {
+            Texture::TextureCreateInfo skybox_cubemap_texture_create_info { GL_TEXTURE_CUBE_MAP };
+            skybox_cubemap_texture_create_info.wrap = GL_CLAMP_TO_EDGE;
+            skybox_cubemap_texture_create_info.min_filter = GL_LINEAR;
+            skybox_cubemap_texture_create_info.mag_filter = GL_LINEAR;
+            skybox_cubemap_texture_create_info.type = GL_UNSIGNED_BYTE;
+            skybox_cubemap_texture_create_info.internal_format = GL_RGB;
+            skybox_cubemap_texture_create_info.format = GL_RGBA;
+            skybox_cubemap_texture_create_info.cubemap_files = {
+                ASSETS_DIR "textures/skybox/px.png",
+                ASSETS_DIR "textures/skybox/nx.png",
+                ASSETS_DIR "textures/skybox/py.png",
+                ASSETS_DIR "textures/skybox/ny.png",
+                ASSETS_DIR "textures/skybox/pz.png",
+                ASSETS_DIR "textures/skybox/nz.png",
+            };
+            ResourceManager::create_resource<Texture>(TEXTURE_SKYBOX_CUBEMAP, skybox_cubemap_texture_create_info);
+
+            skybox_vao = std::make_unique<VAO>();
+            skybox_vbo = std::make_unique<VBO>();
+            skybox_ebo = std::make_unique<EBO>();
+
+            skybox_vao->bind();
+            skybox_vbo->bind();
+            skybox_ebo->bind();
+
+            skybox_vbo->data(Geometry::Cube::vertices, sizeof(Geometry::Cube::vertices), GL_STATIC_DRAW);
+            skybox_ebo->data(Geometry::Cube::indices_inside, sizeof(Geometry::Cube::indices_inside), GL_STATIC_DRAW);
+            skybox_vao->attrib(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+            skybox_vao->unbind();
+            skybox_vbo->unbind();
+            skybox_ebo->unbind();
         }
 
         //GREEDY-MESH-TEXTURE-INIT
@@ -157,13 +269,6 @@ namespace Voxel::Game {
             ResourceManager::create_resource<Texture>("greedy_texture_array", texture_create_info).bind();
         }
 
-        //GENERAL-INIT
-        {
-            Gizmo::setup_axis_gizmo(vao_axis_gizmo);
-            camera = &ResourceManager::create_resource<Camera>("camera_game", width, height, glm::vec3(0, 64, 0));
-            chunk_manager = std::make_unique<ChunkManager>(camera->position);
-        }
-
         //GL-INIT
         {
             glEnable(GL_CULL_FACE);
@@ -178,6 +283,7 @@ namespace Voxel::Game {
 
     void Renderer::update(GLFWwindow* window, float delta_time) {
         camera->update(window, delta_time);
+        chunk_manager->update(camera->position);
 
         if (Input::is_key_pressed(GLFW_KEY_X)) {
             debug = !debug;
@@ -203,35 +309,88 @@ namespace Voxel::Game {
         ImGui::Text(std::format("cam: x={:.2f}; y={:.2f}; z={:.2f}", camera->position.x, camera->position.y, camera->position.z).c_str());
         ImGui::Checkbox("show_gizmos", &Gizmo::show_gizmos);
 
+        static std::string current_item = TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2;
+        static std::unordered_map<std::string, void*> framebuffer_textures {
+            { TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2).get_id()) },
+            { TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT).get_id()) },
+        };
+
+        if (ImGui::BeginCombo("##combo", current_item.c_str())) {
+            for (auto& [str, id] : framebuffer_textures) {
+                bool is_selected = (current_item == str);
+                if (ImGui::Selectable(str.c_str(), is_selected)) {
+                    current_item = str;
+                }
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::Image(framebuffer_textures[current_item], ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+
         ImGui::End();
 
         ImGui::Render();
     }
 
     void Renderer::render() {
-        //RENDER-PASS
+        glEnable(GL_DEPTH_TEST);
+
+        //SHADOW-RENDER-PASS
+        glViewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+        {
+            glCullFace(GL_FRONT);
+            shadow_map_fbo->bind();
+            matrices_ubo->bind();
+            matrices_ubo->sub_data((void*)glm::value_ptr(shadow_map_projection_matrix), sizeof(glm::mat4), 0);
+            matrices_ubo->sub_data((void*)glm::value_ptr(shadow_map_view_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
+            matrices_ubo->unbind();
+
+            glClear(GL_DEPTH_BUFFER_BIT);
+            {
+                chunk_manager->render_chunk_compounds(*camera, false);
+            }
+            shadow_map_fbo->unbind();
+            glCullFace(GL_BACK);
+        }
+
+
+        //SCENE-RENDER-PASS
+        glViewport(0, 0, width, height);
         {
             msaa_framebuffer->bind();
-            glEnable(GL_DEPTH_TEST);
-            glDepthRange(0.0, 1.0);
+
+            matrices_ubo->bind();
+            matrices_ubo->sub_data((void*)glm::value_ptr(camera->get_projection()), sizeof(glm::mat4), 0);
+            matrices_ubo->sub_data((void*)glm::value_ptr(camera->get_matrix()), sizeof(glm::mat4), sizeof(glm::mat4));
+            matrices_ubo->unbind();
+
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            ResourceManager::get_resource<Shader>(SHADER_GREEDY_MESH)
-                .use()
-                .set_uniform_mat4("view", camera->get_matrix())
-                .set_uniform_mat4("projection", camera->get_projection());
+            {
+                glActiveTexture(GL_TEXTURE1);
+                std::get<Texture*>(shadow_map_fbo->attachments[0]->attachment_buffer)->bind();
+                glm::mat4 light_space_matrix = shadow_map_projection_matrix * shadow_map_view_matrix;
+                ResourceManager::get_resource<Shader>(SHADER_GREEDY_MESH).use().set_uniform_int("shadow_map", 1).set_uniform_mat4("light_space_matrix", light_space_matrix);
+                glActiveTexture(GL_TEXTURE0);
+                chunk_manager->render_chunk_compounds(*camera, true);
+            }
 
-            chunk_manager->update(camera->position);
-            chunk_manager->render_chunk_compounds(*camera);
+            {
+                glDepthFunc(GL_LEQUAL);
+                if (debug) Gizmo::render_axis_gizmo(vao_axis_gizmo, *camera);
+                ResourceManager::get_resource<Shader>(SHADER_SKYBOX_CUBEMAP)
+                    .use()
+                    .set_uniform_mat4("view_non_translated", glm::mat4(glm::mat3(camera->get_matrix())));
 
-            ResourceManager::get_resource<Shader>(SHADER_DEFAULT)
-                .use()
-                .set_uniform_mat4("view", camera->get_matrix())
-                .set_uniform_mat4("projection", camera->get_projection())
-                .set_uniform_int("use_texture", GL_FALSE);
+                ResourceManager::get_resource<Texture>(TEXTURE_SKYBOX_CUBEMAP).bind();
+                skybox_vao->bind();
+                glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+                skybox_vao->unbind();
+                glDepthFunc(GL_LESS);
+            }
 
-            if (debug) Gizmo::render_axis_gizmo(vao_axis_gizmo, *camera);
 
-            glDisable(GL_DEPTH_TEST);
             msaa_framebuffer->unbind();
         }
 
@@ -243,6 +402,7 @@ namespace Voxel::Game {
 
         //FRAMEBUFFER-PASS
         {
+            glDisable(GL_DEPTH_TEST);
             glClear(GL_COLOR_BUFFER_BIT);
             ResourceManager::get_resource<Shader>(SHADER_FRAMEBUFFER).use();
             framebuffer_vao->bind();

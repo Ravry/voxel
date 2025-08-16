@@ -4,6 +4,8 @@
 #include <filesystem>
 #include <fstream>
 #include <glad/glad.h>
+#include <vector>
+#include <unordered_map>
 #include "log.h"
 #include "transform.h"
 #include "utils.h"
@@ -12,12 +14,11 @@ namespace Voxel {
     class Shader {
         private:
             unsigned int id;
-            std::string_view vert_file;
-            std::string_view frag_file;
-
+            std::unordered_map<unsigned int, std::string_view> shader_files;
         public:
             Shader() = default;
-            Shader(const char* vertex_shader_file, const char* fragment_shader_file);
+
+            Shader(const std::unordered_map<unsigned int, std::string_view> shader_files);
             ~Shader();
 
             Shader& use();
@@ -29,6 +30,6 @@ namespace Voxel {
             Shader& set_uniform_int(std::string_view name, int value);
 
         private:
-            void load(const char* vertex_shader_file, const char* fragment_shader_file);
+            void load();
     };
 }
