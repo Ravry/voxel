@@ -22,6 +22,6 @@ namespace Voxel::Game {
     private:
         void on_new_chunk_entered(glm::ivec3 chunk_space_position);
     private:
-        int chunk_render_distance {8};
+        int chunk_render_distance {12};
     };
 }

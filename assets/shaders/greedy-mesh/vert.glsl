@@ -8,13 +8,12 @@ layout (std140, binding = 0) uniform Matrices {
 };
 
 uniform mat4 model;
-uniform mat4 light_space_matrix;
 
 out VS_OUT  {
     vec2 uv;
     vec3 vertex;
     vec3 normal;
-    vec4 frag_pos_light_space;
+    vec4 frag_pos_world_space;
 } vs_out;
 
 void main() {
@@ -26,5 +25,5 @@ void main() {
     vs_out.uv = vec2((vertex >> 12u) & 0x1Fu, (vertex >> 7u) & 0x1Fu);
     int norm_flip = int((vertex >> 6u) & 0x1u);
     vs_out.normal = ((norm_flip * 2) - 1) * vec3((vertex >> 5u) & 0x1u, (vertex >> 4u) & 0x1u, (vertex >> 3u) & 0x1u);
-    vs_out.frag_pos_light_space = light_space_matrix * position_world_space;
+    vs_out.frag_pos_world_space = position_world_space;
 }

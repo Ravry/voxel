@@ -6,7 +6,7 @@
 namespace Voxel::Game {
     static bool debug {false};
 
-    const unsigned int SHADOW_MAP_SIZE = 1024;
+    const unsigned int SHADOW_MAP_SIZE = 256;
     static glm::mat4 shadow_map_projection_matrix;
     static glm::mat4 shadow_map_view_matrix;
 
@@ -98,10 +98,9 @@ namespace Voxel::Game {
         framebuffer_shadow_map_attachment_create_info.min_filter = GL_NEAREST;
         framebuffer_shadow_map_attachment_create_info.mag_filter = GL_NEAREST;
         framebuffer_shadow_map_attachment_create_info.wrap = GL_CLAMP_TO_BORDER;
-        float border_color[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_color);
 
         auto& framebuffer_shadow_map_attachment_texture = ResourceManager::create_resource<Texture>(TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT, framebuffer_shadow_map_attachment_create_info);
+
 
         shadow_map_fbo->bind();
         framebuffer_shadow_map_attachment = {
@@ -204,8 +203,7 @@ namespace Voxel::Game {
 
         //SHADOW-FRAMEBUFFER-INIT
         {
-            shadow_map_projection_matrix = glm::ortho(-50.f, 50.f, -50.f, 50.f, 1.f, 200.f);
-            shadow_map_view_matrix = glm::rotate(glm::translate(glm::mat4(1.f), glm::vec3(0, 0.f, -160.f)), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
+            shadow_map_projection_matrix = glm::ortho(-100.f, 100.f, -100.f, 100.f, 1.f, 200.f);
             shadow_map_fbo = std::make_unique<FBO>();
             create_attachments_for_shadow_map_framebuffer(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
         }
@@ -342,6 +340,9 @@ namespace Voxel::Game {
         {
             glCullFace(GL_FRONT);
             shadow_map_fbo->bind();
+
+            shadow_map_view_matrix = glm::rotate(glm::translate(glm::mat4(1.f), glm::vec3(-camera->position.x, camera->position.z, -160.f)), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
+
             matrices_ubo->bind();
             matrices_ubo->sub_data((void*)glm::value_ptr(shadow_map_projection_matrix), sizeof(glm::mat4), 0);
             matrices_ubo->sub_data((void*)glm::value_ptr(shadow_map_view_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
@@ -354,7 +355,6 @@ namespace Voxel::Game {
             shadow_map_fbo->unbind();
             glCullFace(GL_BACK);
         }
-
 
         //SCENE-RENDER-PASS
         glViewport(0, 0, width, height);
