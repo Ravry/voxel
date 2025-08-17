@@ -22,11 +22,11 @@ namespace Voxel {
             void setup_axis_gizmo(VAO& vao);
         private:
             unsigned int width, height;
-
-            std::map<std::string, Instance3D> instances;
             std::unique_ptr<ChunkManager> chunk_manager;
             Camera* camera;
             VAO vao_axis_gizmo;
+            std::unique_ptr<UBO> matrices_ubo;
+
         };
     }
 }

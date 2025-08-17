@@ -14,7 +14,7 @@ namespace Voxel {
             glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_color);
             glTexParameteri(target, GL_TEXTURE_WRAP_S, create_info.wrap);
             glTexParameteri(target, GL_TEXTURE_WRAP_T, create_info.wrap);
-            // glTexParameteri(target, GL_TEXTURE_WRAP_R, create_info.wrap);
+            glTexParameteri(target, GL_TEXTURE_WRAP_R, create_info.wrap);
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, create_info.min_filter);
             glTexParameteri(target, GL_TEXTURE_MAG_FILTER, create_info.mag_filter);
         }
@@ -61,11 +61,8 @@ namespace Voxel {
                     if (create_info.file_path != nullptr) {
                         int w, h, channels;
                         unsigned char* data = stbi_load(create_info.file_path, &w, &h, &channels, 4);
-
-                        if (!data) {
-                            is_valid = false;
-                        }
-
+                        if (!data) is_valid = false;
+                        glTexImage2D(target, 0, create_info.internal_format, w, h, 0, create_info.format, create_info.type, data);
                         stbi_image_free(data);
                         break;
                     }
@@ -94,6 +91,7 @@ namespace Voxel {
                 break;
             }
         }
+
         unbind();
     }
 

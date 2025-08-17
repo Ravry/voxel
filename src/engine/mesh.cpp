@@ -309,5 +309,5 @@ namespace Voxel {
         triangles = indices.size();
     }
 
-    Mesh::Mesh(std::string_view filename) {}
+    Mesh::Mesh(std::vector<float>& vertices, std::vector<unsigned int>& indices) : vertices_float(vertices), indices(indices) {}
 }

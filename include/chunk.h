@@ -2,10 +2,11 @@
 #include <memory>
 #include <unordered_map>
 #include "glm/glm.hpp"
-#include "instance3D.h"
 #include "noise.h"
 #include "misc.h"
 #include "resource_manager.h"
+#include "buffer.h"
+#include "mesh.h"
 
 namespace Voxel {
     namespace Game {

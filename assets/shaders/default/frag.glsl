@@ -10,5 +10,5 @@ uniform bool use_texture;
 in vec2 oUV;
 
 void main() {
-    color = vec4(use_texture ? vec3(texture(main_tex, oUV).r) : albedo, 1);
+    color = vec4(use_texture ? texture(main_tex, oUV).rgb : albedo, 1);
 }

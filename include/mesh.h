@@ -21,9 +21,11 @@ namespace Voxel {
         Mesh(PrimitiveType primitive);
         Mesh(uint16_t* voxels, Game::Chunk** chunk, const size_t size);
         Mesh(std::string_view filename);
+        Mesh(std::vector<float>& vertices, std::vector<unsigned int>& indices);
 
         std::vector<uint32_t> vertices;
         std::vector<unsigned int> indices;
+        std::vector<float> vertices_float;
         unsigned int triangles {0};
     };
 }

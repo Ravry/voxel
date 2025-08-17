@@ -2,11 +2,14 @@
 #include "window.h"
 #include "gizmo.h"
 #include "debug_helper.h"
+#include "model.h"
+#include "light.h"
 
 namespace Voxel::Game {
     static bool debug {false};
+    static float light_rotation {-80.f};
 
-    constexpr unsigned int SHADOW_MAP_SIZE = 4096;
+    constexpr unsigned int SHADOW_MAP_SIZE {4096};
     static glm::mat4 shadow_map_projection_matrix;
     static glm::mat4 shadow_map_view_matrix;
 
@@ -14,11 +17,9 @@ namespace Voxel::Game {
     static std::unique_ptr<FBO> intermediate_framebuffer;
     static std::unique_ptr<FBO> shadow_map_fbo;
 
+    static FBO::FramebufferAttachment framebuffer_color_attachment_multisampled;
+    static FBO::FramebufferAttachment framebuffer_depth_stencil_attachment_multisampled;
     static FBO::FramebufferAttachment framebuffer_color_attachment;
-    static FBO::FramebufferAttachment framebuffer_depth_stencil_attachment;
-    static FBO::FramebufferAttachment framebuffer_color_attachment2;
-
-    static FBO::FramebufferAttachment framebuffer_color_map_attachment;
     static FBO::FramebufferAttachment framebuffer_shadow_map_attachment;
 
     static std::unique_ptr<VAO> framebuffer_vao;
@@ -29,7 +30,11 @@ namespace Voxel::Game {
     static std::unique_ptr<VBO> skybox_vbo;
     static std::unique_ptr<EBO> skybox_ebo;
 
-    static std::unique_ptr<UBO> matrices_ubo;
+    static std::unique_ptr<Model> model_pig;
+    static std::unique_ptr<VAO> pig_vao;
+    static std::unique_ptr<VBO> pig_vbo;
+    static std::unique_ptr<EBO> pig_ebo;
+    static glm::mat4 pig_model;
 
     void create_attachments_for_msaa_framebuffer(unsigned int  width, unsigned int height) {
         Texture::TextureCreateInfo framebuffer_color_attachment_create_info {};
@@ -49,14 +54,14 @@ namespace Voxel::Game {
         auto& framebuffer_depth_stencil_attachment_texture = ResourceManager::create_resource<Texture>(TEXTURE_FRAMEBUFFER_DEPTH_STENCIL_ATTACHMENT, framebuffer_depth_stencil_attachment_create_info);
 
         msaa_framebuffer->bind();
-        framebuffer_color_attachment = {
+        framebuffer_color_attachment_multisampled = {
             GL_COLOR_ATTACHMENT0, framebuffer_color_attachment_create_info.target, &framebuffer_color_attachment_texture
         };
-        msaa_framebuffer->attach(&framebuffer_color_attachment);
-        framebuffer_depth_stencil_attachment = {
+        msaa_framebuffer->attach(&framebuffer_color_attachment_multisampled);
+        framebuffer_depth_stencil_attachment_multisampled = {
             GL_DEPTH_STENCIL_ATTACHMENT, framebuffer_depth_stencil_attachment_create_info.target, &framebuffer_depth_stencil_attachment_texture
         };
-        msaa_framebuffer->attach(&framebuffer_depth_stencil_attachment);
+        msaa_framebuffer->attach(&framebuffer_depth_stencil_attachment_multisampled);
 
         if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             LOG("error -> framebuffer error: {}", std::to_string(status).c_str());
@@ -77,10 +82,10 @@ namespace Voxel::Game {
         auto& framebuffer_color_attachment_texture = ResourceManager::create_resource<Texture>(TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2, framebuffer_color_attachment_create_info);
 
         intermediate_framebuffer->bind();
-        framebuffer_color_attachment2 = {
+        framebuffer_color_attachment = {
             GL_COLOR_ATTACHMENT0, framebuffer_color_attachment_create_info.target, &framebuffer_color_attachment_texture
         };
-        intermediate_framebuffer->attach(&framebuffer_color_attachment2);
+        intermediate_framebuffer->attach(&framebuffer_color_attachment);
 
         if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             LOG("error -> framebuffer error: {}", std::to_string(status).c_str());
@@ -102,34 +107,15 @@ namespace Voxel::Game {
 
         auto& framebuffer_shadow_map_attachment_texture = ResourceManager::create_resource<Texture>(TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT, framebuffer_shadow_map_attachment_create_info);
 
-        Texture::TextureCreateInfo framebuffer_color_map_attachment_create_info {};
-        framebuffer_color_map_attachment_create_info.target = GL_TEXTURE_2D;
-        framebuffer_color_map_attachment_create_info.internal_format = GL_RGB;
-        framebuffer_color_map_attachment_create_info.format = GL_RGB;
-        framebuffer_color_map_attachment_create_info.type = GL_UNSIGNED_BYTE;
-        framebuffer_color_map_attachment_create_info.width = (unsigned int)width;
-        framebuffer_color_map_attachment_create_info.height = (unsigned int)height;
-        framebuffer_color_map_attachment_create_info.min_filter = GL_NEAREST;
-        framebuffer_color_map_attachment_create_info.mag_filter = GL_NEAREST;
-        framebuffer_color_map_attachment_create_info.wrap = GL_CLAMP_TO_BORDER;
-
-        auto& framebuffer_color_map_attachment_texture = ResourceManager::create_resource<Texture>(TEXTURE_FRAMEBUFFER_COLOR_MAP_ATTACHMENT, framebuffer_color_map_attachment_create_info);
-
-
         shadow_map_fbo->bind();
 
         framebuffer_shadow_map_attachment = {
             GL_DEPTH_ATTACHMENT, framebuffer_shadow_map_attachment_create_info.target, &framebuffer_shadow_map_attachment_texture
         };
 
-        framebuffer_color_map_attachment = {
-            GL_COLOR_ATTACHMENT0, framebuffer_color_map_attachment_create_info.target, & framebuffer_color_map_attachment_texture
-        };
-
         glDrawBuffer(GL_NONE);
         glReadBuffer(GL_NONE);
         shadow_map_fbo->attach(&framebuffer_shadow_map_attachment);
-        shadow_map_fbo->attach(&framebuffer_color_map_attachment);
 
         if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             LOG("error -> framebuffer error: {}", std::to_string(status).c_str());
@@ -226,6 +212,28 @@ namespace Voxel::Game {
             matrices_ubo->bind();
             matrices_ubo->sub_data((void*)glm::value_ptr(camera->get_projection()), sizeof(glm::mat4), 0);
             matrices_ubo->unbind();
+
+            model_pig = std::make_unique<Model>(ASSETS_DIR "models/pig/scene.gltf");
+
+            pig_vao = std::make_unique<VAO>();
+            pig_vbo = std::make_unique<VBO>();
+            pig_ebo = std::make_unique<EBO>();
+
+            pig_vao->bind();
+            pig_vbo->bind();
+            pig_ebo->bind();
+
+            pig_vbo->data(model_pig->meshes[0]->vertices_float.data(), model_pig->meshes[0]->vertices_float.size() * sizeof(float), GL_STATIC_DRAW);
+            pig_ebo->data(model_pig->meshes[0]->indices.data(), model_pig->meshes[0]->indices.size() * sizeof(unsigned int), GL_STATIC_DRAW);
+            pig_vao->attrib(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+            pig_vao->attrib(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+            pig_vao->attrib(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+
+            pig_vao->unbind();
+            pig_vbo->unbind();
+            pig_ebo->unbind();
+
+            pig_model = glm::translate(glm::mat4(1.f), glm::vec3(0, 74.f, 25.f));
         }
 
         //SHADOW-FRAMEBUFFER-INIT
@@ -298,7 +306,6 @@ namespace Voxel::Game {
             glEnable(GL_CULL_FACE);
             if (OPTION_MULTISAMPLING_ENABLED) glEnable(GL_MULTISAMPLE);
             glDisable(GL_BLEND);
-
             glLineWidth(2.f);
             glViewport(0, 0, width, height);
             glClearColor(.4f, .4f, 1.f, 1.f);
@@ -326,59 +333,55 @@ namespace Voxel::Game {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("statistics");
+        ImGui::Begin("miscellaneous");
 
-        ImGui::Text(renderer_c_str);
-        ImGui::Text((std::to_string(1./Time::Timer::delta_time) + std::string(" fps (") + std::to_string(Time::Timer::delta_time * 1000.) + std::string(" ms)")).c_str());
-        ImGui::Text(std::format("cam: x={:.2f}; y={:.2f}; z={:.2f}", camera->position.x, camera->position.y, camera->position.z).c_str());
-        ImGui::Checkbox("show_gizmos", &Gizmo::show_gizmos);
-
-        static std::string current_item = TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT;
-        static std::unordered_map<std::string, void*> framebuffer_textures {
-            { TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2).get_id()) },
-            { TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT).get_id()) },
-            { TEXTURE_FRAMEBUFFER_COLOR_MAP_ATTACHMENT, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_COLOR_MAP_ATTACHMENT).get_id()) },
-        };
-
-        if (ImGui::BeginCombo("##combo", current_item.c_str())) {
-            for (auto& [str, id] : framebuffer_textures) {
-                bool is_selected = (current_item == str);
-                if (ImGui::Selectable(str.c_str(), is_selected)) {
-                    current_item = str;
-                }
-                if (is_selected)
-                    ImGui::SetItemDefaultFocus();
-            }
-            ImGui::EndCombo();
+        if (ImGui::CollapsingHeader("information", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::Text(renderer_c_str);
+            ImGui::Text((std::to_string(1./Time::Timer::delta_time) + std::string(" fps (") + std::to_string(Time::Timer::delta_time * 1000.) + std::string(" ms)")).c_str());
+            ImGui::Text(std::format("cam: x={:.2f}; y={:.2f}; z={:.2f}", camera->position.x, camera->position.y, camera->position.z).c_str());
         }
 
-        ImGui::Image(framebuffer_textures[current_item], ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+        if (ImGui::CollapsingHeader("textures")) {
+            static std::string current_item = TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT;
+            static std::unordered_map<std::string, void*> framebuffer_textures {
+                { TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2).get_id()) },
+                { TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT).get_id()) },
+            };
+
+            if (ImGui::BeginCombo("##combo", current_item.c_str())) {
+                for (auto& [str, id] : framebuffer_textures) {
+                    bool is_selected = (current_item == str);
+                    if (ImGui::Selectable(str.c_str(), is_selected)) {
+                        current_item = str;
+                    }
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+
+            ImGui::Image(framebuffer_textures[current_item], ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+        }
+
+        if (ImGui::CollapsingHeader("lights")) {
+            ImGui::DragFloat("light_rotation", &light_rotation, 0.1f, -180.f, 0.f);
+        }
+
+        if (ImGui::CollapsingHeader("chunk-system")) {
+            ImGui::Checkbox("show_gizmos", &Gizmo::show_gizmos);
+        }
 
         ImGui::End();
 
         ImGui::Render();
     }
 
-
-    struct DirectionalLight {
-        glm::vec3 direction;
-
-        DirectionalLight(float rotation_x, float rotation_y, float rotation_z) {
-            glm::quat q = glm::quat(glm::vec3(glm::radians(rotation_x), glm::radians(rotation_y), glm::radians(rotation_z)));
-            direction = q * glm::vec3(0.0f, 0.0f, -1.0f);
-            direction = glm::normalize(direction);
-        }
-    };
-
-
     void Renderer::render() {
-        static DirectionalLight directional_light(-50.f, 0, 0);
-
-        glEnable(GL_DEPTH_TEST);
+        DirectionalLight directional_light(light_rotation, 0, 0);
 
         //SHADOW-RENDER-PASS
-        glViewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
         {
+            glViewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
             shadow_map_fbo->bind();
 
             // LOG("directional_light.direction: {};{};{}", directional_light.direction.x, directional_light.direction.y, directional_light.direction.z);
@@ -403,8 +406,8 @@ namespace Voxel::Game {
         }
 
         //SCENE-RENDER-PASS
-        glViewport(0, 0, width, height);
         {
+            glViewport(0, 0, width, height);
             msaa_framebuffer->bind();
 
             matrices_ubo->bind();
@@ -417,15 +420,28 @@ namespace Voxel::Game {
                 glActiveTexture(GL_TEXTURE1);
                 std::get<Texture*>(shadow_map_fbo->attachments[0]->attachment_buffer)->bind();
                 glm::mat4 light_space_matrix = shadow_map_projection_matrix * shadow_map_view_matrix;
-                auto& shader = ResourceManager::get_resource<Shader>(SHADER_GREEDY_MESH)
+                auto& shader_greedy = ResourceManager::get_resource<Shader>(SHADER_GREEDY_MESH)
                     .use()
                     .set_uniform_int("shadow_map", 1)
                     .set_uniform_mat4("light_space_matrix", light_space_matrix)
                     .set_uniform_vec3("light_direction", directional_light.direction);
                 glActiveTexture(GL_TEXTURE0);
-                chunk_manager->render_chunk_compounds(*camera, true, shader);
+                chunk_manager->render_chunk_compounds(*camera, true, shader_greedy);
+
+                auto& shader_default = ResourceManager::get_resource<Shader>(SHADER_DEFAULT)
+                    .use()
+                    .set_uniform_mat4("model", pig_model)
+                    .set_uniform_int("use_texture", 1);
+                model_pig->texture->bind();
+                pig_vao->bind();
+                glDrawElements(GL_TRIANGLES, model_pig->meshes[0]->indices.size(), GL_UNSIGNED_INT, 0);
+                pig_vao->unbind();
+                shader_default
+                    .set_uniform_int("use_texture", 0)
+                    .unuse();
             }
 
+            //DRAW-SKYBOX
             {
                 glDepthFunc(GL_LEQUAL);
                 if (debug) Gizmo::render_axis_gizmo(vao_axis_gizmo, *camera);
@@ -433,7 +449,8 @@ namespace Voxel::Game {
                     .use()
                     .set_uniform_mat4("view_non_translated", glm::mat4(glm::mat3(camera->get_matrix())));
 
-                ResourceManager::get_resource<Texture>(TEXTURE_SKYBOX_CUBEMAP).bind();
+                ResourceManager::get_resource<Texture>(TEXTURE_SKYBOX_CUBEMAP)
+                    .bind();
                 skybox_vao->bind();
                 glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
                 skybox_vao->unbind();
@@ -444,11 +461,12 @@ namespace Voxel::Game {
         }
 
         //FRAMEBUFFER-BLITING
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, msaa_framebuffer->get_id());
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediate_framebuffer->get_id());
-        glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+        {
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, msaa_framebuffer->get_id());
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediate_framebuffer->get_id());
+            glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
         //FRAMEBUFFER-PASS
         {
             glDisable(GL_DEPTH_TEST);
@@ -458,6 +476,7 @@ namespace Voxel::Game {
             std::get<Texture*>(intermediate_framebuffer->attachments[0]->attachment_buffer)->bind();
             glDrawElements(GL_TRIANGLES, sizeof(Geometry::Quad::indices)/sizeof(Geometry::Quad::indices[0]), GL_UNSIGNED_INT, 0);
             draw_imgui_stuff();
+            glEnable(GL_DEPTH_TEST);
         }
     }
 

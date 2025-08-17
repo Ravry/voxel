@@ -12,9 +12,9 @@
 - [X] Anti-Aliasing (MSAA etc.)
 - [X] Skybox
 - [X] Shadows (very unstable hence not final)
+- [X] Model Loading
 - [ ] SSAO
 - [ ] Player Movement (Physics)
-- [ ] Model Loading
 - [ ] Grass
 - [ ] Water
 - [ ] Entities

@@ -52,7 +52,7 @@ void main() {
 
     vec3 texture_color = texture(texture_array, vec3(fs_in.uv, index_block_type)).rgb;
 
-    float ambient = 0.4;
+    float ambient = 0.2;
     float diffuse = max(dot(fs_in.normal, -normalize(light_direction)), 0.0);
     float shadow = shadow_calculation(fs_in.frag_pos_world_space);
     float lighting = ambient + (1.0 - shadow) * diffuse;
