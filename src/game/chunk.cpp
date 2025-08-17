@@ -145,7 +145,7 @@ namespace Voxel::Game {
         built = true;
     }
 
-    void Chunk::render() {
+    void Chunk::render(Shader& shader) {
         if (!vao_box_gizmo) {
             vao_box_gizmo = std::make_unique<VAO>();
             Gizmo::setup_line_box_gizmo(*vao_box_gizmo);
@@ -163,7 +163,7 @@ namespace Voxel::Game {
             allocated = true;
         }
 
-        ResourceManager::get_resource<Shader>(SHADER_GREEDY_MESH)
+        shader
             .use()
             .set_uniform_mat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(position)));
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer_allocator->ssbo_ids[slot]);

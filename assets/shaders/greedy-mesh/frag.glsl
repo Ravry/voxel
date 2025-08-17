@@ -19,29 +19,22 @@ in VS_OUT {
 
 uniform mat4 light_space_matrix;
 
-uniform vec3 light_direction = vec3(0, -1.0, 0);
+uniform vec3 light_direction;
 
 float shadow_calculation(vec4 _frag_pos) {
-    vec3 block_pos = floor(_frag_pos.xyz);
-    vec3 face_center = block_pos + vec3(.5) + fs_in.normal * .49;
-    vec4 frag_pos = light_space_matrix * vec4(face_center, 1.0);
-    vec3 proj_coords = frag_pos.xyz / frag_pos.w;
+    vec4 frag_pos = light_space_matrix * vec4(_frag_pos.xyz, 1.0);
+    vec3 proj_coords = frag_pos.xyz;
     proj_coords = proj_coords * .5 + .5;
 
     if(proj_coords.z > 1.0)
         return 0.0;
 
     float current_depth = proj_coords.z;
-    float bias = .00005;
+    float bias = max(0.0005 * (1.0 - dot(fs_in.normal, light_direction)), 0.00005);
     float shadow = 0.0;
-    vec2 texel_size = 1.0 / textureSize(shadow_map, 0);
-    for(int x = 0; x < 1; ++x) {
-        for(int y = 0; y < 1; ++y) {
-            float pcf_depth = texture(shadow_map, proj_coords.xy + vec2(x, y) * texel_size).r;
-            shadow += current_depth - bias > pcf_depth ? 1.0 : 0.0;
-        }
-    }
-    shadow /= 1.0;
+
+    float pcf_depth = texture(shadow_map, proj_coords.xy).r;
+    shadow = current_depth - bias > pcf_depth ? 1.0 : 0.0;
 
     return shadow;
 }
@@ -59,7 +52,7 @@ void main() {
 
     vec3 texture_color = texture(texture_array, vec3(fs_in.uv, index_block_type)).rgb;
 
-    float ambient = 0.3;
+    float ambient = 0.4;
     float diffuse = max(dot(fs_in.normal, -normalize(light_direction)), 0.0);
     float shadow = shadow_calculation(fs_in.frag_pos_world_space);
     float lighting = ambient + (1.0 - shadow) * diffuse;

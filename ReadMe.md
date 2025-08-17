@@ -11,7 +11,7 @@
 - [X] Custom Frame-Buffer
 - [X] Anti-Aliasing (MSAA etc.)
 - [X] Skybox
-- [ ] Shadows
+- [X] Shadows (very unstable hence not final)
 - [ ] SSAO
 - [ ] Player Movement (Physics)
 - [ ] Model Loading

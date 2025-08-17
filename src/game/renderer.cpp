@@ -6,7 +6,7 @@
 namespace Voxel::Game {
     static bool debug {false};
 
-    const unsigned int SHADOW_MAP_SIZE = 256;
+    constexpr unsigned int SHADOW_MAP_SIZE = 4096;
     static glm::mat4 shadow_map_projection_matrix;
     static glm::mat4 shadow_map_view_matrix;
 
@@ -17,12 +17,13 @@ namespace Voxel::Game {
     static FBO::FramebufferAttachment framebuffer_color_attachment;
     static FBO::FramebufferAttachment framebuffer_depth_stencil_attachment;
     static FBO::FramebufferAttachment framebuffer_color_attachment2;
+
+    static FBO::FramebufferAttachment framebuffer_color_map_attachment;
     static FBO::FramebufferAttachment framebuffer_shadow_map_attachment;
 
     static std::unique_ptr<VAO> framebuffer_vao;
     static std::unique_ptr<VBO> framebuffer_vbo;
     static std::unique_ptr<EBO> framebuffer_ebo;
-
 
     static std::unique_ptr<VAO> skybox_vao;
     static std::unique_ptr<VBO> skybox_vbo;
@@ -101,14 +102,34 @@ namespace Voxel::Game {
 
         auto& framebuffer_shadow_map_attachment_texture = ResourceManager::create_resource<Texture>(TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT, framebuffer_shadow_map_attachment_create_info);
 
+        Texture::TextureCreateInfo framebuffer_color_map_attachment_create_info {};
+        framebuffer_color_map_attachment_create_info.target = GL_TEXTURE_2D;
+        framebuffer_color_map_attachment_create_info.internal_format = GL_RGB;
+        framebuffer_color_map_attachment_create_info.format = GL_RGB;
+        framebuffer_color_map_attachment_create_info.type = GL_UNSIGNED_BYTE;
+        framebuffer_color_map_attachment_create_info.width = (unsigned int)width;
+        framebuffer_color_map_attachment_create_info.height = (unsigned int)height;
+        framebuffer_color_map_attachment_create_info.min_filter = GL_NEAREST;
+        framebuffer_color_map_attachment_create_info.mag_filter = GL_NEAREST;
+        framebuffer_color_map_attachment_create_info.wrap = GL_CLAMP_TO_BORDER;
+
+        auto& framebuffer_color_map_attachment_texture = ResourceManager::create_resource<Texture>(TEXTURE_FRAMEBUFFER_COLOR_MAP_ATTACHMENT, framebuffer_color_map_attachment_create_info);
+
 
         shadow_map_fbo->bind();
+
         framebuffer_shadow_map_attachment = {
             GL_DEPTH_ATTACHMENT, framebuffer_shadow_map_attachment_create_info.target, &framebuffer_shadow_map_attachment_texture
         };
+
+        framebuffer_color_map_attachment = {
+            GL_COLOR_ATTACHMENT0, framebuffer_color_map_attachment_create_info.target, & framebuffer_color_map_attachment_texture
+        };
+
         glDrawBuffer(GL_NONE);
         glReadBuffer(GL_NONE);
         shadow_map_fbo->attach(&framebuffer_shadow_map_attachment);
+        shadow_map_fbo->attach(&framebuffer_color_map_attachment);
 
         if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             LOG("error -> framebuffer error: {}", std::to_string(status).c_str());
@@ -154,11 +175,17 @@ namespace Voxel::Game {
             );
 
             ResourceManager::create_resource<Shader>(
-            SHADER_GREEDY_MESH,
+                SHADER_GREEDY_MESH_FOR_SHADOW_PASS,
+                std::unordered_map<unsigned int, std::string_view> {
+                    { GL_VERTEX_SHADER, ASSETS_DIR "shaders/greedy-mesh/vert.glsl" }
+                }
+            );
+
+            ResourceManager::create_resource<Shader>(
+                SHADER_GREEDY_MESH,
                 std::unordered_map<unsigned int, std::string_view> {
                     { GL_VERTEX_SHADER, ASSETS_DIR "shaders/greedy-mesh/vert.glsl" },
                     { GL_FRAGMENT_SHADER, ASSETS_DIR "shaders/greedy-mesh/frag.glsl" },
-                    // { GL_GEOMETRY_SHADER, ASSETS_DIR "shaders/greedy-mesh/geom.glsl" }
                 }
             );
         }
@@ -203,7 +230,6 @@ namespace Voxel::Game {
 
         //SHADOW-FRAMEBUFFER-INIT
         {
-            shadow_map_projection_matrix = glm::ortho(-100.f, 100.f, -100.f, 100.f, 1.f, 200.f);
             shadow_map_fbo = std::make_unique<FBO>();
             create_attachments_for_shadow_map_framebuffer(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
         }
@@ -307,10 +333,11 @@ namespace Voxel::Game {
         ImGui::Text(std::format("cam: x={:.2f}; y={:.2f}; z={:.2f}", camera->position.x, camera->position.y, camera->position.z).c_str());
         ImGui::Checkbox("show_gizmos", &Gizmo::show_gizmos);
 
-        static std::string current_item = TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2;
+        static std::string current_item = TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT;
         static std::unordered_map<std::string, void*> framebuffer_textures {
             { TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2).get_id()) },
             { TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT).get_id()) },
+            { TEXTURE_FRAMEBUFFER_COLOR_MAP_ATTACHMENT, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_COLOR_MAP_ATTACHMENT).get_id()) },
         };
 
         if (ImGui::BeginCombo("##combo", current_item.c_str())) {
@@ -332,16 +359,36 @@ namespace Voxel::Game {
         ImGui::Render();
     }
 
+
+    struct DirectionalLight {
+        glm::vec3 direction;
+
+        DirectionalLight(float rotation_x, float rotation_y, float rotation_z) {
+            glm::quat q = glm::quat(glm::vec3(glm::radians(rotation_x), glm::radians(rotation_y), glm::radians(rotation_z)));
+            direction = q * glm::vec3(0.0f, 0.0f, -1.0f);
+            direction = glm::normalize(direction);
+        }
+    };
+
+
     void Renderer::render() {
+        static DirectionalLight directional_light(-50.f, 0, 0);
+
         glEnable(GL_DEPTH_TEST);
 
         //SHADOW-RENDER-PASS
         glViewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
         {
-            glCullFace(GL_FRONT);
             shadow_map_fbo->bind();
 
-            shadow_map_view_matrix = glm::rotate(glm::translate(glm::mat4(1.f), glm::vec3(-camera->position.x, camera->position.z, -160.f)), glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
+            // LOG("directional_light.direction: {};{};{}", directional_light.direction.x, directional_light.direction.y, directional_light.direction.z);
+            const float ortho_size = 50.f;
+            shadow_map_projection_matrix = glm::ortho(-ortho_size, ortho_size, -ortho_size, ortho_size, 1.0f, 500.f);
+            shadow_map_view_matrix = glm::lookAt(
+                camera->position - directional_light.direction * 120.f,
+                camera->position,
+                glm::normalize(glm::cross(directional_light.direction, glm::vec3(1.f, 0.f, 0.f)))
+            );
 
             matrices_ubo->bind();
             matrices_ubo->sub_data((void*)glm::value_ptr(shadow_map_projection_matrix), sizeof(glm::mat4), 0);
@@ -350,10 +397,9 @@ namespace Voxel::Game {
 
             glClear(GL_DEPTH_BUFFER_BIT);
             {
-                chunk_manager->render_chunk_compounds(*camera, false);
+                chunk_manager->render_chunk_compounds(*camera, false, ResourceManager::get_resource<Shader>(SHADER_GREEDY_MESH_FOR_SHADOW_PASS));
             }
             shadow_map_fbo->unbind();
-            glCullFace(GL_BACK);
         }
 
         //SCENE-RENDER-PASS
@@ -371,9 +417,13 @@ namespace Voxel::Game {
                 glActiveTexture(GL_TEXTURE1);
                 std::get<Texture*>(shadow_map_fbo->attachments[0]->attachment_buffer)->bind();
                 glm::mat4 light_space_matrix = shadow_map_projection_matrix * shadow_map_view_matrix;
-                ResourceManager::get_resource<Shader>(SHADER_GREEDY_MESH).use().set_uniform_int("shadow_map", 1).set_uniform_mat4("light_space_matrix", light_space_matrix);
+                auto& shader = ResourceManager::get_resource<Shader>(SHADER_GREEDY_MESH)
+                    .use()
+                    .set_uniform_int("shadow_map", 1)
+                    .set_uniform_mat4("light_space_matrix", light_space_matrix)
+                    .set_uniform_vec3("light_direction", directional_light.direction);
                 glActiveTexture(GL_TEXTURE0);
-                chunk_manager->render_chunk_compounds(*camera, true);
+                chunk_manager->render_chunk_compounds(*camera, true, shader);
             }
 
             {
@@ -389,7 +439,6 @@ namespace Voxel::Game {
                 skybox_vao->unbind();
                 glDepthFunc(GL_LESS);
             }
-
 
             msaa_framebuffer->unbind();
         }
