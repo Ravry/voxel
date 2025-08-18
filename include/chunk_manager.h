@@ -16,7 +16,7 @@ namespace Voxel::Game {
         ChunkManager(glm::ivec3 position);
         ~ChunkManager();
         void update(glm::ivec3 position);
-        void render_chunk_compounds(Camera& camera, bool frustum_cull, Shader& shader);
+        void render_chunk_compounds(Plane* frustum, Shader& shader);
 
         static void worker_func();
     private:

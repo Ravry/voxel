@@ -2,7 +2,7 @@
 #include "log.h"
 
 namespace Voxel {
-    std::unique_ptr<Mesh> Model::process_mesh(aiMesh *mesh, const aiScene *scene) {
+    std::unique_ptr<Mesh<float>> Model::process_mesh(aiMesh *mesh, const aiScene *scene) {
         std::vector<float> vertices;
         std::vector<unsigned int> indices;
         for (size_t i {0}; i < mesh->mNumVertices; i++) {
@@ -39,11 +39,10 @@ namespace Voxel {
                 texture_create_info.min_filter = GL_NEAREST;
                 texture_create_info.mag_filter = GL_NEAREST;
                 texture_create_info.file_path = std::format("{}/{}", model_path, str.C_Str()).c_str();
-                LOG("loading model-texture: {}", texture_create_info.file_path);
                 texture = std::make_unique<Texture>(texture_create_info);
             }
         }
-        return std::make_unique<Mesh>(vertices, indices);
+        return std::make_unique<Mesh<float>>(vertices, indices);
     }
 
     void Model::process_node(aiNode* node, const aiScene* scene) {

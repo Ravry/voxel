@@ -13,8 +13,8 @@
 - [X] Skybox
 - [X] Shadows (very unstable hence not final)
 - [X] Model Loading
-- [ ] SSAO
 - [ ] Player Movement (Physics)
+- [ ] SSAO
 - [ ] Grass
 - [ ] Water
 - [ ] Entities

@@ -10,14 +10,14 @@ namespace Voxel::Game {
     public:
         ChunkCompound(Noise& noise, glm::vec3 position);
         void build_chunk_meshes();
-        void render(Camera& camera, bool frustum_cull, Shader& shader);
+        void render(Plane* frustum, Shader& shader);
         void unload();
 
         glm::vec3 position;
+
     private:
         int height_map[SIZE * SIZE];
         BlockType block_types[SIZE * (SIZE * num_chunks_per_compound) * SIZE] {};
         std::vector<Chunk*> chunks;
-
     };
 }

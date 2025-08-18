@@ -22,7 +22,7 @@ namespace Voxel {
 
             glm::ivec3 position;
 
-            std::unique_ptr<Mesh> mesh;
+            std::unique_ptr<Mesh<uint32_t>> mesh;
             std::unique_ptr<SSBO> ssbo;
             bool is_empty {true};
             uint16_t voxels[SIZE * SIZE * 3] = {};

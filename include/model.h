@@ -13,9 +13,9 @@ namespace Voxel {
     private:
         std::string_view model_path;
         void process_node(aiNode* node, const aiScene* scene);
-        std::unique_ptr<Mesh> process_mesh(aiMesh *mesh, const aiScene *scene);
+        std::unique_ptr<Mesh<float>> process_mesh(aiMesh *mesh, const aiScene *scene);
     public:
-        std::vector<std::unique_ptr<Mesh>> meshes;
+        std::vector<std::unique_ptr<Mesh<float>>> meshes;
         std::unique_ptr<Texture> texture;
         Model(std::string_view path);
     };

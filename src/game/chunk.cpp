@@ -141,7 +141,7 @@ namespace Voxel::Game {
         ChunkPos chunk_top_index { position.x, position.y + SIZE, position.z };
         if (chunks.find(chunk_top_index) != chunks.end()) neighbor_chunks[5] = chunks[chunk_top_index].get();
 
-        mesh = std::make_unique<Mesh>(voxels, neighbor_chunks, SIZE);
+        mesh = std::make_unique<Mesh<uint32_t>>(voxels, neighbor_chunks, SIZE);
         built = true;
     }
 

@@ -39,6 +39,18 @@ namespace Voxel {
 
     class VAO : public Buffer {
         public:
+            struct AttribInfo {
+                struct Attrib {
+                    GLuint index;
+                    GLint size;
+                    GLenum type;
+                    const void *pointer;
+                };
+
+                GLsizei stride;
+                std::vector<Attrib> attribs;
+            };
+
             VAO();
             ~VAO();
             void bind() const override;

@@ -1,17 +1,17 @@
 #include "renderer.h"
+
+#include "buffer.h"
+#include "buffer.h"
 #include "window.h"
 #include "gizmo.h"
 #include "debug_helper.h"
 #include "model.h"
+#include "instance_3d.h"
 #include "light.h"
 
 namespace Voxel::Game {
     static bool debug {false};
     static float light_rotation {-80.f};
-
-    constexpr unsigned int SHADOW_MAP_SIZE {4096};
-    static glm::mat4 shadow_map_projection_matrix;
-    static glm::mat4 shadow_map_view_matrix;
 
     static std::unique_ptr<FBO> msaa_framebuffer;
     static std::unique_ptr<FBO> intermediate_framebuffer;
@@ -22,19 +22,19 @@ namespace Voxel::Game {
     static FBO::FramebufferAttachment framebuffer_color_attachment;
     static FBO::FramebufferAttachment framebuffer_shadow_map_attachment;
 
-    static std::unique_ptr<VAO> framebuffer_vao;
-    static std::unique_ptr<VBO> framebuffer_vbo;
-    static std::unique_ptr<EBO> framebuffer_ebo;
+    static std::unique_ptr<Mesh<float>> mesh_screen_quad;
+    static std::unique_ptr<Material> material_screen_quad;
+    static std::unique_ptr<Instance3D> instance_screen_quad;
 
-    static std::unique_ptr<VAO> skybox_vao;
-    static std::unique_ptr<VBO> skybox_vbo;
-    static std::unique_ptr<EBO> skybox_ebo;
+    static std::unique_ptr<Mesh<float>> mesh_skybox;
+    static std::unique_ptr<Material> material_skybox;
+    static std::unique_ptr<Instance3D> instance_skybox;
 
     static std::unique_ptr<Model> model_pig;
-    static std::unique_ptr<VAO> pig_vao;
-    static std::unique_ptr<VBO> pig_vbo;
-    static std::unique_ptr<EBO> pig_ebo;
-    static glm::mat4 pig_model;
+    static std::unique_ptr<Material> material_pig;
+    static std::unique_ptr<Instance3D> instance_pig;
+
+    static DirectionalLight directional_light(light_rotation, 0, 0);
 
     void create_attachments_for_msaa_framebuffer(unsigned int  width, unsigned int height) {
         Texture::TextureCreateInfo framebuffer_color_attachment_create_info {};
@@ -184,22 +184,20 @@ namespace Voxel::Game {
             intermediate_framebuffer = std::make_unique<FBO>();
             create_attachments_for_intermediate_framebuffer(width, height);
 
-            framebuffer_vao = std::make_unique<VAO>();
-            framebuffer_vbo = std::make_unique<VBO>();
-            framebuffer_ebo = std::make_unique<EBO>();
-
-            framebuffer_vao->bind();
-            framebuffer_vbo->bind();
-            framebuffer_ebo->bind();
-
-            framebuffer_vbo->data(Geometry::Quad::vertices, sizeof(Geometry::Quad::vertices), GL_STATIC_DRAW);
-            framebuffer_ebo->data(Geometry::Quad::indices, sizeof(Geometry::Quad::indices), GL_STATIC_DRAW);
-            framebuffer_vao->attrib(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-            framebuffer_vao->attrib(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-
-            framebuffer_vao->unbind();
-            framebuffer_vbo->unbind();
-            framebuffer_ebo->unbind();
+            mesh_screen_quad = std::make_unique<Mesh<float>>(Geometry::Quad::vertices, Geometry::Quad::indices);
+            material_screen_quad = std::make_unique<Material>(&ResourceManager::get_resource<Shader>(SHADER_FRAMEBUFFER), &ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2));
+            instance_screen_quad = std::make_unique<Instance3D>(
+                mesh_screen_quad.get(),
+                VAO::AttribInfo {
+                    .stride = 5 * sizeof(float),
+                    .attribs = {
+                        {0, 3, GL_FLOAT, (void*)0},
+                        {1, 2, GL_FLOAT, (void*)(3 * sizeof(float))}
+                    }
+                },
+                material_screen_quad.get(),
+                glm::vec3(0.f)
+            );
         }
 
         //GENERAL-INIT
@@ -214,26 +212,20 @@ namespace Voxel::Game {
             matrices_ubo->unbind();
 
             model_pig = std::make_unique<Model>(ASSETS_DIR "models/pig/scene.gltf");
-
-            pig_vao = std::make_unique<VAO>();
-            pig_vbo = std::make_unique<VBO>();
-            pig_ebo = std::make_unique<EBO>();
-
-            pig_vao->bind();
-            pig_vbo->bind();
-            pig_ebo->bind();
-
-            pig_vbo->data(model_pig->meshes[0]->vertices_float.data(), model_pig->meshes[0]->vertices_float.size() * sizeof(float), GL_STATIC_DRAW);
-            pig_ebo->data(model_pig->meshes[0]->indices.data(), model_pig->meshes[0]->indices.size() * sizeof(unsigned int), GL_STATIC_DRAW);
-            pig_vao->attrib(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-            pig_vao->attrib(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-            pig_vao->attrib(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-
-            pig_vao->unbind();
-            pig_vbo->unbind();
-            pig_ebo->unbind();
-
-            pig_model = glm::translate(glm::mat4(1.f), glm::vec3(0, 74.f, 25.f));
+            material_pig = std::make_unique<Material>(&ResourceManager::get_resource<Shader>(SHADER_DEFAULT), model_pig->texture.get());
+            instance_pig = std::make_unique<Instance3D>(
+                model_pig->meshes[0].get(),
+                VAO::AttribInfo {
+                    .stride = 8 * sizeof(float),
+                    .attribs = {
+                        VAO::AttribInfo::Attrib {0, 3, GL_FLOAT, (void*)0},
+                        VAO::AttribInfo::Attrib {1, 3, GL_FLOAT, (void*)(3 * sizeof(float))},
+                        VAO::AttribInfo::Attrib {2, 2, GL_FLOAT, (void*)(6 * sizeof(float))}
+                    }
+                },
+                material_pig.get(),
+                glm::vec3(0.f, 60.f, 0.f)
+            );
         }
 
         //SHADOW-FRAMEBUFFER-INIT
@@ -259,23 +251,21 @@ namespace Voxel::Game {
                 ASSETS_DIR "textures/skybox/pz.png",
                 ASSETS_DIR "textures/skybox/nz.png",
             };
-            ResourceManager::create_resource<Texture>(TEXTURE_SKYBOX_CUBEMAP, skybox_cubemap_texture_create_info);
+            auto& skybox_texture = ResourceManager::create_resource<Texture>(TEXTURE_SKYBOX_CUBEMAP, skybox_cubemap_texture_create_info);
 
-            skybox_vao = std::make_unique<VAO>();
-            skybox_vbo = std::make_unique<VBO>();
-            skybox_ebo = std::make_unique<EBO>();
-
-            skybox_vao->bind();
-            skybox_vbo->bind();
-            skybox_ebo->bind();
-
-            skybox_vbo->data(Geometry::Cube::vertices, sizeof(Geometry::Cube::vertices), GL_STATIC_DRAW);
-            skybox_ebo->data(Geometry::Cube::indices_inside, sizeof(Geometry::Cube::indices_inside), GL_STATIC_DRAW);
-            skybox_vao->attrib(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-            skybox_vao->unbind();
-            skybox_vbo->unbind();
-            skybox_ebo->unbind();
+            mesh_skybox = std::make_unique<Mesh<float>>(Geometry::Cube::vertices, Geometry::Cube::indices_inside);
+            material_skybox = std::make_unique<Material>(&ResourceManager::get_resource<Shader>(SHADER_SKYBOX_CUBEMAP), &skybox_texture);
+            instance_skybox = std::make_unique<Instance3D>(
+                mesh_skybox.get(),
+                VAO::AttribInfo {
+                    .stride = 3 * sizeof(float),
+                    .attribs = {
+                        {0, 3, GL_FLOAT, (void *) 0}
+                    }
+                },
+                material_skybox.get(),
+                glm::vec3(0.f)
+            );
         }
 
         //GREEDY-MESH-TEXTURE-INIT
@@ -315,6 +305,8 @@ namespace Voxel::Game {
     void Renderer::update(GLFWwindow* window, float delta_time) {
         camera->update(window, delta_time);
         chunk_manager->update(camera->position);
+
+        directional_light.update(camera);
 
         if (Input::is_key_pressed(GLFW_KEY_X)) {
             debug = !debug;
@@ -377,7 +369,6 @@ namespace Voxel::Game {
     }
 
     void Renderer::render() {
-        DirectionalLight directional_light(light_rotation, 0, 0);
 
         //SHADOW-RENDER-PASS
         {
@@ -385,22 +376,15 @@ namespace Voxel::Game {
             shadow_map_fbo->bind();
 
             // LOG("directional_light.direction: {};{};{}", directional_light.direction.x, directional_light.direction.y, directional_light.direction.z);
-            const float ortho_size = 50.f;
-            shadow_map_projection_matrix = glm::ortho(-ortho_size, ortho_size, -ortho_size, ortho_size, 1.0f, 500.f);
-            shadow_map_view_matrix = glm::lookAt(
-                camera->position - directional_light.direction * 120.f,
-                camera->position,
-                glm::normalize(glm::cross(directional_light.direction, glm::vec3(1.f, 0.f, 0.f)))
-            );
 
             matrices_ubo->bind();
-            matrices_ubo->sub_data((void*)glm::value_ptr(shadow_map_projection_matrix), sizeof(glm::mat4), 0);
-            matrices_ubo->sub_data((void*)glm::value_ptr(shadow_map_view_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
+            matrices_ubo->sub_data((void*)glm::value_ptr(directional_light.shadow_map_projection_matrix), sizeof(glm::mat4), 0);
+            matrices_ubo->sub_data((void*)glm::value_ptr(directional_light.shadow_map_view_matrix), sizeof(glm::mat4), sizeof(glm::mat4));
             matrices_ubo->unbind();
 
             glClear(GL_DEPTH_BUFFER_BIT);
             {
-                chunk_manager->render_chunk_compounds(*camera, false, ResourceManager::get_resource<Shader>(SHADER_GREEDY_MESH_FOR_SHADOW_PASS));
+                chunk_manager->render_chunk_compounds(directional_light.frustum, ResourceManager::get_resource<Shader>(SHADER_GREEDY_MESH_FOR_SHADOW_PASS));
             }
             shadow_map_fbo->unbind();
         }
@@ -419,26 +403,15 @@ namespace Voxel::Game {
             {
                 glActiveTexture(GL_TEXTURE1);
                 std::get<Texture*>(shadow_map_fbo->attachments[0]->attachment_buffer)->bind();
-                glm::mat4 light_space_matrix = shadow_map_projection_matrix * shadow_map_view_matrix;
                 auto& shader_greedy = ResourceManager::get_resource<Shader>(SHADER_GREEDY_MESH)
                     .use()
                     .set_uniform_int("shadow_map", 1)
-                    .set_uniform_mat4("light_space_matrix", light_space_matrix)
+                    .set_uniform_mat4("light_space_matrix", directional_light.get_light_space_matrix())
                     .set_uniform_vec3("light_direction", directional_light.direction);
                 glActiveTexture(GL_TEXTURE0);
-                chunk_manager->render_chunk_compounds(*camera, true, shader_greedy);
+                chunk_manager->render_chunk_compounds(camera->frustum, shader_greedy);
 
-                auto& shader_default = ResourceManager::get_resource<Shader>(SHADER_DEFAULT)
-                    .use()
-                    .set_uniform_mat4("model", pig_model)
-                    .set_uniform_int("use_texture", 1);
-                model_pig->texture->bind();
-                pig_vao->bind();
-                glDrawElements(GL_TRIANGLES, model_pig->meshes[0]->indices.size(), GL_UNSIGNED_INT, 0);
-                pig_vao->unbind();
-                shader_default
-                    .set_uniform_int("use_texture", 0)
-                    .unuse();
+                instance_pig->render();
             }
 
             //DRAW-SKYBOX
@@ -448,12 +421,7 @@ namespace Voxel::Game {
                 ResourceManager::get_resource<Shader>(SHADER_SKYBOX_CUBEMAP)
                     .use()
                     .set_uniform_mat4("view_non_translated", glm::mat4(glm::mat3(camera->get_matrix())));
-
-                ResourceManager::get_resource<Texture>(TEXTURE_SKYBOX_CUBEMAP)
-                    .bind();
-                skybox_vao->bind();
-                glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-                skybox_vao->unbind();
+                instance_skybox->render();
                 glDepthFunc(GL_LESS);
             }
 
@@ -467,14 +435,12 @@ namespace Voxel::Game {
             glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
+
         //FRAMEBUFFER-PASS
         {
             glDisable(GL_DEPTH_TEST);
             glClear(GL_COLOR_BUFFER_BIT);
-            ResourceManager::get_resource<Shader>(SHADER_FRAMEBUFFER).use();
-            framebuffer_vao->bind();
-            std::get<Texture*>(intermediate_framebuffer->attachments[0]->attachment_buffer)->bind();
-            glDrawElements(GL_TRIANGLES, sizeof(Geometry::Quad::indices)/sizeof(Geometry::Quad::indices[0]), GL_UNSIGNED_INT, 0);
+            instance_screen_quad->render();
             draw_imgui_stuff();
             glEnable(GL_DEPTH_TEST);
         }

@@ -17,21 +17,21 @@ namespace Voxel::Geometry {
     }
 
     namespace Quad {
-        static float vertices[] {
+        static std::vector<float> vertices {
             -1.f, -1.f, 0.f, 0.f, 0.f,
              1.f, -1.f, 0.f, 1.f, 0.f,
             -1.f,  1.f, 0.f, 0.f, 1.f,
              1.f,  1.f, 0.f, 1.f, 1.f
         };
 
-        static unsigned int indices[] {
+        static std::vector<unsigned int> indices {
             0, 1, 2,
             1, 3, 2
         };
     }
 
     namespace Cube {
-        static float vertices[] {
+        static std::vector<float> vertices {
             -0.5f, -0.5f,  0.5f,
              0.5f, -0.5f,  0.5f,
              0.5f,  0.5f,  0.5f,
@@ -43,7 +43,7 @@ namespace Voxel::Geometry {
             -0.5f,  0.5f, -0.5f,
         };
 
-        static unsigned int indices[] {
+        static std::vector<unsigned int> indices {
             0, 1, 2,  2, 3, 0,
             1, 5, 6,  6, 2, 1,
             5, 4, 7,  7, 6, 5,
@@ -52,7 +52,7 @@ namespace Voxel::Geometry {
             4, 5, 1,  1, 0, 4,
         };
 
-        static unsigned int indices_inside[] {
+        static std::vector<unsigned int> indices_inside {
             2, 1, 0,  0, 3, 2,
             6, 5, 1,  1, 2, 6,
             7, 4, 5,  5, 6, 7,
