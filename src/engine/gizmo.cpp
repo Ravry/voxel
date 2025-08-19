@@ -53,7 +53,8 @@ namespace Voxel::Gizmo {
         ResourceManager::get_resource<Shader>(SHADER_DEFAULT)
             .use()
             .set_uniform_mat4("model", glm::scale(glm::translate(glm::mat4(1.0f), position), size))
-            .set_uniform_vec3("albedo", glm::vec3(1.f));
+            .set_uniform_vec3("albedo", glm::vec3(1.f))
+            .set_uniform_int("use_texture", 0);
         glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, (void*)0);
         vao.unbind();
     }
@@ -93,7 +94,9 @@ namespace Voxel::Gizmo {
         auto& shader = ResourceManager::get_resource<Shader>(SHADER_DEFAULT)
             .use()
             .set_uniform_mat4("model", model)
-            .set_uniform_vec3("albedo", glm::vec3(0, 0, 0));
+            .set_uniform_vec3("albedo", glm::vec3(0, 0, 0))
+            .set_uniform_int("use_texture", 0);
+
 
         glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, (void*)0);
         glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, (void*)(2 * sizeof(unsigned)));

@@ -29,6 +29,8 @@ namespace Voxel::Game {
 
     static Noise noise;
 
+    int ChunkManager::num_chunks {0};
+
     void ChunkManager::worker_func() {
         while (!worker_should_exit) {
             std::unique_lock<std::mutex> lock(chunks_requested_mutex);
@@ -67,6 +69,8 @@ namespace Voxel::Game {
                     chunks_render[chunk.first] = chunk.second;
                 }
             }
+
+            num_chunks = chunks_cached.size();
         }
     }
 

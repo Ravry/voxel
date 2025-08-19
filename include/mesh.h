@@ -3,7 +3,10 @@
 #include <vector>
 #include <stdint.h>
 #include <string_view>
+#include <Jolt/Jolt.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
 #include "geometry.h"
+#include "log.h"
 
 namespace Voxel::Game {
     class Chunk;
@@ -35,7 +38,35 @@ namespace Voxel {
             return packed;
         }
 
-        Mesh(uint16_t* voxels, Game::Chunk** chunks, const std::size_t size)
+        JPH::Ref<JPH::Shape> create_mesh_collision_shape(std::vector<JPH::Float3>& vertices, std::vector<JPH::uint32>& indices) {
+            if (vertices.empty()) return nullptr;
+
+            JPH::MeshShapeSettings meshSettings;
+            meshSettings.SetEmbedded();
+
+            for (const auto& vertex : vertices) {
+                meshSettings.mTriangleVertices.push_back(vertex);
+            }
+
+            for (size_t i = 0; i < indices.size(); i += 3) {
+                JPH::IndexedTriangle triangle;
+                triangle.mIdx[0] = indices[i];
+                triangle.mIdx[1] = indices[i + 1];
+                triangle.mIdx[2] = indices[i + 2];
+                triangle.mMaterialIndex = 0;
+                meshSettings.mIndexedTriangles.push_back(triangle);
+            }
+
+            JPH::Shape::ShapeResult result = meshSettings.Create();
+            if (result.HasError()) {
+                LOG("Failed to create mesh shape: {}", result.GetError().c_str());
+                return nullptr;
+            }
+
+            return result.Get();
+        }
+
+        Mesh(uint16_t* voxels, Game::Chunk** chunks, const std::size_t size, JPH::Ref<JPH::Shape>& shape)
         {
             #pragma region face_culling
             std::vector<uint16_t> voxels_zy_top_face(size * size, 0);
@@ -112,6 +143,9 @@ namespace Voxel {
             vertices.reserve(size * size * 4 * 6);
             indices.reserve(size * size * 8 * 6);
 
+            std::vector<JPH::Float3> vertices_jolt;
+            std::vector<JPH::uint32> indices_jolt;
+
             #pragma region greedy_meshing
 
             for (std::size_t i {0}; i < size; i++)
@@ -174,6 +208,10 @@ namespace Voxel {
                             *vertex_ptr++ = packed_vertex_data(x0f, y0f, z1f, norm_flip,  0, 1, 0, 0, width);
                             *vertex_ptr++ = packed_vertex_data(x1f, y0f, z1f, norm_flip,  0, 1, 0, height, width);
 
+                            vertices_jolt.push_back(JPH::Float3(x0f, y0f, z0f));
+                            vertices_jolt.push_back(JPH::Float3(x1f, y0f, z0f));
+                            vertices_jolt.push_back(JPH::Float3(x0f, y0f, z1f));
+                            vertices_jolt.push_back(JPH::Float3(x1f, y0f, z1f));
 
                             triangles += 4;
                         }
@@ -233,6 +271,10 @@ namespace Voxel {
                             *vertex_ptr++ = packed_vertex_data(x0f, y0f, z1f, norm_flip, 1, 0, 0, width, height);
                             *vertex_ptr++ = packed_vertex_data(x0f, y1f, z1f, norm_flip, 1, 0, 0, width, 0);
 
+                            vertices_jolt.push_back(JPH::Float3(x0f, y0f, z0f));
+                            vertices_jolt.push_back(JPH::Float3(x0f, y1f, z0f));
+                            vertices_jolt.push_back(JPH::Float3(x0f, y0f, z1f));
+                            vertices_jolt.push_back(JPH::Float3(x0f, y1f, z1f));
 
                             triangles += 4;
                         }
@@ -291,6 +333,10 @@ namespace Voxel {
                             *vertex_ptr++ = packed_vertex_data(x1f, y0f, z0f, norm_flip, 0, 0, 1, width, height);
                             *vertex_ptr++ = packed_vertex_data(x1f, y1f, z0f, norm_flip, 0, 0, 1, width, 0);
 
+                            vertices_jolt.push_back(JPH::Float3(x0f, y0f, z0f));
+                            vertices_jolt.push_back(JPH::Float3(x0f, y1f, z0f));
+                            vertices_jolt.push_back(JPH::Float3(x1f, y0f, z0f));
+                            vertices_jolt.push_back(JPH::Float3(x1f, y1f, z0f));
 
                             triangles += 4;
                         }
@@ -298,9 +344,14 @@ namespace Voxel {
                 }
             }
 
+            for (auto _idx : indices) {
+                indices_jolt.push_back(_idx);
+            }
+
             #pragma endregion
 
             triangles = indices.size();
+            shape = (triangles > 0) ? create_mesh_collision_shape(vertices_jolt, indices_jolt) : nullptr;
         }
 
 

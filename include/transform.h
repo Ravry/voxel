@@ -10,7 +10,7 @@ namespace Voxel {
         public:
             Transform();
             Transform(glm::vec3 translation, glm::vec3 rotation, glm::vec3 scale);
-            glm::mat4 get_matrix() {
+            glm::mat4& get_matrix() {
                 return matrix;
             }
     };

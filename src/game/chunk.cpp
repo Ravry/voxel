@@ -1,6 +1,7 @@
 #include "chunk.h"
 #include "buffer_allocator.h"
 #include "gizmo.h"
+#include "physics_manager.h"
 
 namespace Voxel::Game {
     static std::unique_ptr<VAO> vao_box_gizmo;
@@ -141,7 +142,7 @@ namespace Voxel::Game {
         ChunkPos chunk_top_index { position.x, position.y + SIZE, position.z };
         if (chunks.find(chunk_top_index) != chunks.end()) neighbor_chunks[5] = chunks[chunk_top_index].get();
 
-        mesh = std::make_unique<Mesh<uint32_t>>(voxels, neighbor_chunks, SIZE);
+        mesh = std::make_unique<Mesh<uint32_t>>(voxels, neighbor_chunks, SIZE, shape);
         built = true;
     }
 

@@ -11,9 +11,13 @@ layout (std140, binding = 0) uniform Matrices {
 
 uniform mat4 model;
 
-out vec2 oUV;
+out VS_OUT  {
+    vec2 uv;
+    vec3 normal;
+} vs_out;
 
 void main() {
     gl_Position = projection  * view * model * vec4(vertex, 1.0);
-    oUV = uv;
+    vs_out.uv = uv;
+    vs_out.normal = normal;
 }

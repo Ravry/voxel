@@ -19,6 +19,7 @@ namespace Voxel::Game {
         void render_chunk_compounds(Plane* frustum, Shader& shader);
 
         static void worker_func();
+        static int num_chunks;
     private:
         void on_new_chunk_entered(glm::ivec3 chunk_space_position);
     private:

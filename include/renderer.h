@@ -8,6 +8,7 @@
 #include "texture.h"
 #include "camera.h"
 #include "chunk_manager.h"
+#include "physics_manager.h"
 
 namespace Voxel {
     namespace Game {
@@ -26,7 +27,7 @@ namespace Voxel {
             Camera* camera;
             VAO vao_axis_gizmo;
             std::unique_ptr<UBO> matrices_ubo;
-
+            Physics::PhysicsManager* physics_manager;
         };
     }
 }

@@ -18,7 +18,6 @@ in VS_OUT {
 } fs_in;
 
 uniform mat4 light_space_matrix;
-
 uniform vec3 light_direction;
 
 float shadow_calculation(vec4 _frag_pos) {

@@ -8,6 +8,7 @@
 #include "model.h"
 #include "instance_3d.h"
 #include "light.h"
+#include "physics_manager.h"
 
 namespace Voxel::Game {
     static bool debug {false};
@@ -33,6 +34,10 @@ namespace Voxel::Game {
     static std::unique_ptr<Model> model_pig;
     static std::unique_ptr<Material> material_pig;
     static std::unique_ptr<Instance3D> instance_pig;
+
+    static std::unique_ptr<VAO> vao;
+    static std::unique_ptr<VBO> vbo;
+    static std::unique_ptr<EBO> ebo;
 
     static DirectionalLight directional_light(light_rotation, 0, 0);
 
@@ -124,12 +129,27 @@ namespace Voxel::Game {
     }
 
     Renderer::Renderer(GLFWwindow* window, float width, float height) : width(width), height(height) {
+        //PHYSICS-INIT
+        {
+            physics_manager = &Physics::PhysicsManager::get_instance();
+        }
+
         //IMGUI-INIT
         {
             IMGUI_CHECKVERSION();
             ImGui::CreateContext();
             ImGuiIO& io = ImGui::GetIO(); (void)io;
-            ImGui::StyleColorsDark();
+            ImGui::StyleColorsClassic();
+            ImGuiStyle& style = ImGui::GetStyle();
+            style.WindowRounding    = 12.0f;
+            style.ChildRounding     = 12.0f;
+            style.PopupRounding     = 12.0f;
+            style.FrameRounding     = 8.0f;
+            style.ScrollbarRounding = 12.0f;
+            style.GrabRounding      = 8.0f;
+            style.FrameBorderSize   = 1.0f;
+            style.WindowBorderSize  = 1.0f;
+            style.PopupBorderSize   = 1.0f;
             ImGui_ImplGlfw_InitForOpenGL(window, true);
             ImGui_ImplOpenGL3_Init("#version 330 core");
         }
@@ -291,6 +311,9 @@ namespace Voxel::Game {
             ResourceManager::create_resource<Texture>("greedy_texture_array", texture_create_info).bind();
         }
 
+        //INSTANCED-RENDERING-INIT
+        {}
+
         //GL-INIT
         {
             glEnable(GL_CULL_FACE);
@@ -302,15 +325,24 @@ namespace Voxel::Game {
         }
     }
 
+
+    glm::vec3 prev_position {200.f, 100.f, 0.f};
+    glm::vec3 curr_position {200.f, 100.f, 0.f};
+
     void Renderer::update(GLFWwindow* window, float delta_time) {
+
+        float lerp_t {1.f};
+        physics_manager->update(curr_position, prev_position, lerp_t);
+        glm::mat4& mat = instance_pig->get_matrix();
+        glm::vec3 real_pos = glm::mix(prev_position, curr_position, lerp_t);
+        mat = glm::translate(glm::mat4(1.f), real_pos);
+
         camera->update(window, delta_time);
         chunk_manager->update(camera->position);
 
         directional_light.update(camera);
 
-        if (Input::is_key_pressed(GLFW_KEY_X)) {
-            debug = !debug;
-        }
+        if (Input::is_key_pressed(GLFW_KEY_X)) debug = !debug;
 
         if (Input::is_key_pressed(GLFW_KEY_R)) {
             for (auto& shader : ResourceManager::get_storage<Shader>()) {
@@ -325,12 +357,18 @@ namespace Voxel::Game {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        ImGui::SetNextWindowBgAlpha(0.3f);
+
         ImGui::Begin("miscellaneous");
 
         if (ImGui::CollapsingHeader("information", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::Text(renderer_c_str);
             ImGui::Text((std::to_string(1./Time::Timer::delta_time) + std::string(" fps (") + std::to_string(Time::Timer::delta_time * 1000.) + std::string(" ms)")).c_str());
             ImGui::Text(std::format("cam: x={:.2f}; y={:.2f}; z={:.2f}", camera->position.x, camera->position.y, camera->position.z).c_str());
+        }
+
+        if (ImGui::CollapsingHeader("physics", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::Text("physics powered by jolt-physics");
         }
 
         if (ImGui::CollapsingHeader("textures")) {
@@ -359,8 +397,21 @@ namespace Voxel::Game {
             ImGui::DragFloat("light_rotation", &light_rotation, 0.1f, -180.f, 0.f);
         }
 
-        if (ImGui::CollapsingHeader("chunk-system")) {
+        if (ImGui::CollapsingHeader("chunk-system", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::Checkbox("show_gizmos", &Gizmo::show_gizmos);
+            ImGui::Text(
+                std::format(
+                    "{} MB/Chunk\n"
+                    "{} MB/ChunkCompound\n"
+                    "memory: {} MB",
+                    (sizeof(Chunk)/1000000.f),
+                    (sizeof(ChunkCompound)/1000000.f),
+                    (
+                        (ChunkManager::num_chunks * num_chunks_per_compound * sizeof(Chunk)) +
+                        (ChunkManager::num_chunks * sizeof(ChunkCompound))
+                    ) / 1000000.f
+                ).c_str()
+            );
         }
 
         ImGui::End();
@@ -369,13 +420,10 @@ namespace Voxel::Game {
     }
 
     void Renderer::render() {
-
         //SHADOW-RENDER-PASS
         {
             glViewport(0, 0, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
             shadow_map_fbo->bind();
-
-            // LOG("directional_light.direction: {};{};{}", directional_light.direction.x, directional_light.direction.y, directional_light.direction.z);
 
             matrices_ubo->bind();
             matrices_ubo->sub_data((void*)glm::value_ptr(directional_light.shadow_map_projection_matrix), sizeof(glm::mat4), 0);
@@ -410,18 +458,19 @@ namespace Voxel::Game {
                     .set_uniform_vec3("light_direction", directional_light.direction);
                 glActiveTexture(GL_TEXTURE0);
                 chunk_manager->render_chunk_compounds(camera->frustum, shader_greedy);
-
                 instance_pig->render();
             }
 
             //DRAW-SKYBOX
             {
                 glDepthFunc(GL_LEQUAL);
-                if (debug) Gizmo::render_axis_gizmo(vao_axis_gizmo, *camera);
                 ResourceManager::get_resource<Shader>(SHADER_SKYBOX_CUBEMAP)
                     .use()
                     .set_uniform_mat4("view_non_translated", glm::mat4(glm::mat3(camera->get_matrix())));
                 instance_skybox->render();
+
+                glDepthFunc(GL_ALWAYS);
+                if (debug) Gizmo::render_axis_gizmo(vao_axis_gizmo, *camera);
                 glDepthFunc(GL_LESS);
             }
 

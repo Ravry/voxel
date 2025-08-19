@@ -7,8 +7,11 @@ uniform vec3 albedo;
 
 uniform bool use_texture;
 
-in vec2 oUV;
+in VS_OUT  {
+    vec2 uv;
+    vec3 normal;
+} fs_in;
 
 void main() {
-    color = vec4(use_texture ? texture(main_tex, oUV).rgb : albedo, 1);
+    color = vec4(use_texture ? texture(main_tex, fs_in.uv).rgb : albedo, 1);
 }

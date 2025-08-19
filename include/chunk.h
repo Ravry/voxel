@@ -33,6 +33,7 @@ namespace Voxel {
             bool built {false};
             unsigned int slot {0};
             bool allocated {false};
+            JPH::Ref<JPH::Shape> shape;
         };
     }
 }
