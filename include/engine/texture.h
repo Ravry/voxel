@@ -1,11 +1,11 @@
 #pragma once
+#include <glad/glad.h>
 #include <string_view>
 #include <vector>
 #include <map>
 #include <memory>
 #include <iostream>
-#include "glad/glad.h"
-#include "stb_image.h"
+#include <stb_image.h>
 
 namespace Voxel {
     class Texture {

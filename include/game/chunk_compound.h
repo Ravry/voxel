@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include "chunk.h"
-#include "camera.h"
+#include "engine/camera.h"
 
 namespace Voxel::Game {
     const int num_chunks_per_compound = 16;

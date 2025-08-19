@@ -1,6 +1,6 @@
-#include "input.h"
+#include "engine/input.h"
 #include <vector>
-#include "log.h"
+#include "core/log.h"
 
 namespace Voxel {
     float Input::delta_x = 0;

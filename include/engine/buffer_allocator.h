@@ -2,7 +2,9 @@
 #include <memory>
 #include <array>
 #include <queue>
-#include "buffer.h"
+#include <iostream>
+#include <ostream>
+#include "engine/buffer.h"
 
 namespace Voxel {
 

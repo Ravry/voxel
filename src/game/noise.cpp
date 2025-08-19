@@ -1,4 +1,4 @@
-#include "noise.h"
+#include "game/noise.h"
 
 namespace Voxel {
     inline float normalize_noise(float noise) {

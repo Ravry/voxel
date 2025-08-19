@@ -1,7 +1,6 @@
 #pragma once
 
 namespace Voxel::Geometry {
-    //TODO: fix
     namespace Triangle {
         static float vertices[] {
             -0.5f, -0.5f, 0.f, 0.f, 0.f,

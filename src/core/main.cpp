@@ -1,5 +1,5 @@
 #include <iostream>
-#include "window.h"
+#include "core/window.h"
 
 using namespace Voxel;
 

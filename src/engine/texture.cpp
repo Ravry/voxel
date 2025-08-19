@@ -1,8 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <iostream>
-#include "texture.h"
-
-#include "log.h"
+#include "engine/texture.h"
+#include "core/log.h"
 
 namespace Voxel {
     Texture::Texture(const TextureCreateInfo& create_info) : target(create_info.target) {

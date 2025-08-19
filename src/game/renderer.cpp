@@ -1,18 +1,7 @@
-#include "renderer.h"
-
-#include "buffer.h"
-#include "buffer.h"
-#include "window.h"
-#include "gizmo.h"
-#include "debug_helper.h"
-#include "model.h"
-#include "instance_3d.h"
-#include "light.h"
-#include "physics_manager.h"
+#include "game/renderer.h"
 
 namespace Voxel::Game {
     static bool debug {false};
-    static float light_rotation {-80.f};
 
     static std::unique_ptr<FBO> msaa_framebuffer;
     static std::unique_ptr<FBO> intermediate_framebuffer;
@@ -35,11 +24,7 @@ namespace Voxel::Game {
     static std::unique_ptr<Material> material_pig;
     static std::unique_ptr<Instance3D> instance_pig;
 
-    static std::unique_ptr<VAO> vao;
-    static std::unique_ptr<VBO> vbo;
-    static std::unique_ptr<EBO> ebo;
-
-    static DirectionalLight directional_light(light_rotation, 0, 0);
+    static DirectionalLight directional_light(-60.f, 0, 0);
 
     void create_attachments_for_msaa_framebuffer(unsigned int  width, unsigned int height) {
         Texture::TextureCreateInfo framebuffer_color_attachment_create_info {};
@@ -325,20 +310,18 @@ namespace Voxel::Game {
         }
     }
 
-
-    glm::vec3 prev_position {200.f, 100.f, 0.f};
-    glm::vec3 curr_position {200.f, 100.f, 0.f};
-
     void Renderer::update(GLFWwindow* window, float delta_time) {
+        static glm::vec3 prev_position {200.f, 100.f, 0.f};
+        static glm::vec3 curr_position {200.f, 100.f, 0.f};
+
         float lerp_t {1.f};
         physics_manager->update(curr_position, prev_position, lerp_t);
         glm::mat4& mat = instance_pig->get_matrix();
         glm::vec3 real_pos = glm::mix(prev_position, curr_position, lerp_t);
         mat = glm::translate(glm::mat4(1.f), real_pos);
 
-        camera->update(window, delta_time);
         chunk_manager->update(camera->position);
-
+        camera->update(window, delta_time);
         directional_light.update(camera);
 
         if (Input::is_key_pressed(GLFW_KEY_X)) debug = !debug;
@@ -361,8 +344,7 @@ namespace Voxel::Game {
         ImGui::Begin("miscellaneous");
 
         if (ImGui::CollapsingHeader("information", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::Text(renderer_c_str);
-            ImGui::Text((std::to_string(1./Time::Timer::delta_time) + std::string(" fps (") + std::to_string(Time::Timer::delta_time * 1000.) + std::string(" ms)")).c_str());
+            ImGui::Text((std::to_string(1./Time::delta_time) + std::string(" fps (") + std::to_string(Time::delta_time * 1000.) + std::string(" ms)")).c_str());
             ImGui::Text(std::format("cam: x={:.2f}; y={:.2f}; z={:.2f}", camera->position.x, camera->position.y, camera->position.z).c_str());
         }
 
@@ -380,11 +362,8 @@ namespace Voxel::Game {
             if (ImGui::BeginCombo("##combo", current_item.c_str())) {
                 for (auto& [str, id] : framebuffer_textures) {
                     bool is_selected = (current_item == str);
-                    if (ImGui::Selectable(str.c_str(), is_selected)) {
-                        current_item = str;
-                    }
-                    if (is_selected)
-                        ImGui::SetItemDefaultFocus();
+                    if (ImGui::Selectable(str.c_str(), is_selected)) current_item = str;
+                    if (is_selected) ImGui::SetItemDefaultFocus();
                 }
                 ImGui::EndCombo();
             }
@@ -392,9 +371,7 @@ namespace Voxel::Game {
             ImGui::Image(framebuffer_textures[current_item], ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
         }
 
-        if (ImGui::CollapsingHeader("lights")) {
-            ImGui::DragFloat("light_rotation", &light_rotation, 0.1f, -180.f, 0.f);
-        }
+        if (ImGui::CollapsingHeader("lights")) {}
 
         if (ImGui::CollapsingHeader("chunk-system", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::Checkbox("show_gizmos", &Gizmo::show_gizmos);

@@ -1,12 +1,14 @@
-#include "chunk_manager.h"
+#include "game/chunk_manager.h"
 
 namespace Voxel::Game {
     static int64_t chunk_position_to_key(int x, int z) {
         return ((int64_t)x << 32) | (uint32_t)z;
     }
+    
     static glm::vec3 chunk_key_to_position(int64_t key) {
         return glm::vec3(key >> 32, 0, (int32_t)key);
     }
+
     static glm::ivec3 world_space_to_chunk_space(glm::ivec3 position_world_space) {
         return glm::ivec3(
             (position_world_space.x / SIZE) * SIZE,
@@ -19,35 +21,47 @@ namespace Voxel::Game {
     static std::atomic<bool> worker_should_exit;
     static std::condition_variable worker_cv;
 
-    static std::queue<int64_t> chunks_requested;
-    static std::mutex chunks_requested_mutex;
-
     static std::unordered_map<int64_t, std::unique_ptr<ChunkCompound>> chunks_cached;
 
     static std::unordered_map<int64_t, ChunkCompound*> chunks_render;
     static std::mutex chunks_render_mutex;
 
-    static std::mutex player_position_mutex;
+    static bool position_updated {false};
     static glm::ivec3 player_current_chunk_position {0};
+    static std::mutex player_position_mutex;
 
     static Noise noise;
 
-    int ChunkManager::num_chunks {0};
+    int ChunkManager::chunk_render_distance {12};
 
     void ChunkManager::worker_func() {
+        const int render_distance_squared = chunk_render_distance * chunk_render_distance;
+        
         while (!worker_should_exit) {
-            std::unique_lock<std::mutex> lock(chunks_requested_mutex);
-            worker_cv.wait(lock, [] { return !chunks_requested.empty() || worker_should_exit; });
-            std::vector<int64_t> _chunk_requests;
-            while (!chunks_requested.empty()) {
-                _chunk_requests.push_back(chunks_requested.front());
-                chunks_requested.pop();
-            }
+            glm::vec3 _position;
+            std::unique_lock<std::mutex> lock(player_position_mutex);
+            worker_cv.wait(lock, [] { return position_updated || worker_should_exit; });
+            position_updated = false;
+            _position = player_current_chunk_position;
             lock.unlock();
+
+            std::queue<int64_t> chunks_requested;
+            for (int x = -chunk_render_distance; x <= chunk_render_distance; x++) {
+                for (int z = -chunk_render_distance; z <= chunk_render_distance; z++) {
+                    if (x * x + z * z <= render_distance_squared) {
+                        chunks_requested.push(
+                            chunk_position_to_key(_position.x + x * SIZE, _position.z + z * SIZE)
+                        );
+                    }
+                }
+            }
 
             std::unordered_map<int64_t, ChunkCompound*> _chunks_new;
             {
-                for (int64_t chunk_key : _chunk_requests) {
+                while (!chunks_requested.empty()) {
+                    auto chunk_key = chunks_requested.front();
+                    chunks_requested.pop();
+
                     if (!chunks_cached.contains(chunk_key)) {
                         chunks_cached[chunk_key] = std::make_unique<ChunkCompound>(noise, chunk_key_to_position(chunk_key));
                     }
@@ -55,17 +69,8 @@ namespace Voxel::Game {
                 }
             }
 
-            glm::vec3 _position;
-            {
-                std::lock_guard<std::mutex> lock_position(player_position_mutex);
-                _position = player_current_chunk_position;
-            }
-
-
             for (auto& [_, chunk] : _chunks_new) {
-                if (glm::distance(chunk->position, _position) <= 100) {
-                    chunk->build_chunk_meshes();
-                }
+                chunk->build_chunk_meshes();
             }
 
             {
@@ -95,7 +100,6 @@ namespace Voxel::Game {
         worker_should_exit = true;
         worker_cv.notify_one();
         worker_thread.join();
-        // LOG("ChunkManager::~ChunkManager()");
     }
 
     void ChunkManager::update(glm::ivec3 position_world_space) {
@@ -120,21 +124,12 @@ namespace Voxel::Game {
     void ChunkManager::on_new_chunk_entered(glm::ivec3 position_chunk_space) {
         {
             std::lock_guard<std::mutex> lock_position(player_position_mutex);
+            position_updated = true;
             player_current_chunk_position = position_chunk_space;
-        }
-
-        const int render_distance_squared = chunk_render_distance * chunk_render_distance;
-        {
-            std::lock_guard<std::mutex> lock(chunks_requested_mutex);
-            for (int x = -chunk_render_distance; x <= chunk_render_distance; x++) {
-                for (int z = -chunk_render_distance; z <= chunk_render_distance; z++) {
-                    if (x * x + z * z <= render_distance_squared) {
-                        chunks_requested.push(chunk_position_to_key(position_chunk_space.x + x * SIZE, position_chunk_space.z + z * SIZE));
-                    }
-                }
-            }
         }
 
         worker_cv.notify_one();
     }
+
+    int ChunkManager::num_chunks {0};
 }

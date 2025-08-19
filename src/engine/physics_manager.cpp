@@ -1,4 +1,4 @@
-#include "physics_manager.h"
+#include "engine/physics_manager.h"
 
 
 namespace Voxel::Physics {
@@ -30,7 +30,7 @@ namespace Voxel::Physics {
         temp_allocator = std::make_unique<TempAllocatorImpl>(10 * 1024 * 1024);
         job_system = std::make_unique<JobSystemThreadPool>(cMaxPhysicsJobs, cMaxPhysicsBarriers, thread::hardware_concurrency() - 1);
         const uint cMaxBodies = 1024;
-        const uint cNumBodyMutexes = 0;
+        const uint cNumBodyMutexes = 1024;
         const uint cMaxBodyPairs = 1024;
         const uint cMaxContactConstraints = 1024;
 
@@ -65,7 +65,6 @@ namespace Voxel::Physics {
         physics_system->OptimizeBroadPhase();
     }
 
-    static int body_c {0};
     void PhysicsManager::add_body_from_shape(JPH::Ref<Shape>& shape, BodyID& id, RVec3 position) {
         if (!shape.GetPtr()) {
             LOG("ERROR: Null shape passed to add_body_from_shape");
@@ -76,13 +75,8 @@ namespace Voxel::Physics {
         id = body_interface_ptr->CreateAndAddBody(body_settings, EActivation::DontActivate);
 
         if (id.IsInvalid()) {
-            // LOG("ERROR: Failed to create body");
+            LOG("ERROR: Failed to create body");
         }
-        else {
-            body_c++;
-        }
-
-        LOG("body_c: {}", body_c);
     }
 
     void PhysicsManager::free_body(BodyID& id) {
@@ -98,7 +92,7 @@ namespace Voxel::Physics {
         if (Input::is_key_pressed(GLFW_KEY_F))
             activate_physics = true;
 
-        accumulator += Time::Timer::delta_time;
+        accumulator += Time::delta_time;
 
         while (accumulator >= cDeltaTime) {
             if (!activate_physics) {

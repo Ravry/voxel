@@ -1,5 +1,5 @@
-#include "model.h"
-#include "log.h"
+#include "engine/model.h"
+#include "core/log.h"
 
 namespace Voxel {
     std::unique_ptr<Mesh<float>> Model::process_mesh(aiMesh *mesh, const aiScene *scene) {

@@ -1,6 +1,6 @@
 #pragma once
+#include "engine/time.h"
 #include <GLFW/glfw3.h>
-#include "utils.h"
 
 namespace Voxel {
     class Input {

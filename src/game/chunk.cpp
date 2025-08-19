@@ -1,11 +1,9 @@
-#include "chunk.h"
-#include "buffer_allocator.h"
-#include "gizmo.h"
-#include "physics_manager.h"
+#include "game/chunk.h"
+#include "engine/buffer_allocator.h"
+#include "engine/gizmo.h"
+#include "engine/physics_manager.h"
 
 namespace Voxel::Game {
-    static std::unique_ptr<VAO> vao_box_gizmo;
-
     struct ChunkPos {
         int32_t x, y, z;
 
@@ -28,14 +26,51 @@ namespace Voxel::Game {
         }
     };
 
-    static std::unordered_map<ChunkPos, std::unique_ptr<Chunk>, ChunkPosHash> chunks;
+    static std::unique_ptr<VAO> vao_box_gizmo;
     static std::unique_ptr<BufferAllocator> buffer_allocator;
+    static std::unordered_map<ChunkPos, std::unique_ptr<Chunk>, ChunkPosHash> chunks;
 
     Chunk* Chunk::create(int* height_map, BlockType* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) {
         std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>(height_map, block_types, tree_positions, noise, position);
         Chunk* ptr = chunk.get();
         chunks[ChunkPos {position.x, position.y, position.z}] = std::move(chunk);
         return ptr;
+    }
+
+    Chunk::Chunk(int* height_map, BlockType* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) : position(position), block_types_ptr(&block_types[(position.y * SIZE * SIZE)])
+    {
+        generate_trees(noise, height_map, tree_positions);
+
+        for (uint16_t y = 0; y < SIZE; y++)
+        {
+            for (uint16_t z = 0; z < SIZE; z++)
+            {
+                for (uint16_t x = 0; x < SIZE; x++)
+                {
+                    int noise_value = height_map[x + (z * SIZE)];
+                    int world_space_position_y = position.y + y;
+
+                    BlockType block = block_types_ptr[x + (y * SIZE) + (z * SIZE * SIZE)];
+                    if (block == BlockType::Air) {
+                        if (world_space_position_y == 0) block = BlockType::Bedrock;
+                        else if (world_space_position_y == noise_value) {
+                            if (world_space_position_y > 128) block = BlockType::Snow;
+                            else if (world_space_position_y > 96) block = BlockType::Stone;
+                            else if (noise.fetch_cave(position.x + x, position.y + y, position.z + z) < .7f) block = BlockType::Grass;
+                        }
+                        else if (world_space_position_y < noise_value) {
+                            if (noise.fetch_cave(position.x + x, position.y + y, position.z + z) < .7f) {
+                                if (world_space_position_y > noise_value - 2) block = BlockType::Dirt;
+                                else if (world_space_position_y < 20 && ((float)rand()/RAND_MAX) < .01 ) block = BlockType::Diamond;
+                                else block = BlockType::Stone;
+                            }
+                        }
+                    }
+
+                    set_block(x, y, z, block);
+                }
+            }
+        }
     }
 
     void Chunk::generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions) {
@@ -79,42 +114,6 @@ namespace Voxel::Game {
         uint16_t& row3 = voxels[x  + (z * SIZE) + ((SIZE * SIZE) * 2)] |= bit << y;
     }
 
-    Chunk::Chunk(int* height_map, BlockType* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) : position(position), block_types_ptr(&block_types[(position.y * SIZE * SIZE)])
-    {
-        generate_trees(noise, height_map, tree_positions);
-
-        for (uint16_t y = 0; y < SIZE; y++)
-        {
-            for (uint16_t z = 0; z < SIZE; z++)
-            {
-                for (uint16_t x = 0; x < SIZE; x++)
-                {
-                    int noise_value = height_map[x + (z * SIZE)];
-                    int world_space_position_y = position.y + y;
-
-                    BlockType block = block_types_ptr[x + (y * SIZE) + (z * SIZE * SIZE)];
-                    if (block == BlockType::Air) {
-                        if (world_space_position_y == 0) block = BlockType::Bedrock;
-                        else if (world_space_position_y == noise_value) {
-                            if (world_space_position_y > 128) block = BlockType::Snow;
-                            else if (world_space_position_y > 96) block = BlockType::Stone;
-                            else if (noise.fetch_cave(position.x + x, position.y + y, position.z + z) < .7f) block = BlockType::Grass;
-                        }
-                        else if (world_space_position_y < noise_value) {
-                            if (noise.fetch_cave(position.x + x, position.y + y, position.z + z) < .7f) {
-                                if (world_space_position_y > noise_value - 2) block = BlockType::Dirt;
-                                else if (world_space_position_y < 20 && ((float)rand()/RAND_MAX) < .01 ) block = BlockType::Diamond;
-                                else block = BlockType::Stone;
-                            }
-                        }
-                    }
-
-                    set_block(x, y, z, block);
-                }
-            }
-        }
-    }
-
     void Chunk::build_mesh() {
         if (built) return;
 
@@ -143,7 +142,6 @@ namespace Voxel::Game {
         if (chunks.find(chunk_top_index) != chunks.end()) neighbor_chunks[5] = chunks[chunk_top_index].get();
 
         mesh = std::make_unique<Mesh<uint32_t>>(voxels, neighbor_chunks, SIZE, shape);
-        if (!mesh->vertices.empty()) Physics::PhysicsManager::get_instance().add_body_from_shape(shape, body_id, Vec3(position.x, position.y, position.z));
         built = true;
     }
 
@@ -157,7 +155,7 @@ namespace Voxel::Game {
 
         if (!buffer_allocator) buffer_allocator = std::make_unique<BufferAllocator>();
 
-        if (!allocated && mesh->triangles > 0) {
+        if (!allocated && mesh->indices.size() > 0) {
             buffer_allocator->allocate_buffer(slot);
             memcpy(buffer_allocator->vertex_buffer_objects[slot], mesh->vertices.data(), mesh->vertices.size() * sizeof(uint32_t));
             memcpy(buffer_allocator->element_buffer_objects[slot], mesh->indices.data(), mesh->indices.size() * sizeof(unsigned int));
@@ -178,10 +176,6 @@ namespace Voxel::Game {
 
     void Chunk::unload() {
         if (!allocated) return;
-
-        if (!body_id.IsInvalid()) {
-            Physics::PhysicsManager::get_instance().free_body(body_id);
-        }
 
         allocated = false;
         buffer_allocator->free_buffer(slot);

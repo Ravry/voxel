@@ -1,6 +1,6 @@
 #pragma once
-#include "shader.h"
-#include "texture.h"
+#include "engine/shader.h"
+#include "engine/texture.h"
 
 namespace Voxel {
     class Material {

@@ -1,9 +1,9 @@
 #pragma once
-#include "buffer.h"
-#include "shader.h"
-#include "camera.h"
-#include "mesh.h"
-#include "resource_manager.h"
+#include "engine/buffer.h"
+#include "engine/shader.h"
+#include "engine/camera.h"
+#include "engine/mesh.h"
+#include "engine/resource_manager.h"
 
 namespace Voxel::Gizmo {
     extern bool show_gizmos;

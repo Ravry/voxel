@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include "FastNoiseLite.h"
+#include <FastNoiseLite.h>
 
 namespace Voxel {
     class Noise {

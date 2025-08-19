@@ -3,12 +3,13 @@
 #include <memory>
 #include <filesystem>
 #include <fstream>
-#include <glad/glad.h>
 #include <vector>
 #include <unordered_map>
-#include "log.h"
-#include "transform.h"
-#include "utils.h"
+#include <glad/glad.h>
+#include "core/log.h"
+#include "engine/transform.h"
+#include "engine/time.h"
+#include "game/misc.h"
 
 namespace Voxel {
     class Shader {

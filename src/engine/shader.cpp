@@ -1,7 +1,4 @@
-#include "shader.h"
-
-#include "misc.h"
-
+#include "engine/shader.h"
 
 namespace Voxel {
     void check_status(unsigned int shader, GLenum pname) {

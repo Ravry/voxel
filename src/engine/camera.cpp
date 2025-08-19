@@ -1,6 +1,5 @@
-#include "camera.h"
-
-#include "log.h"
+#include "engine/camera.h"
+#include "core/log.h"
 
 namespace Voxel {
     static bool cursor_enabled = false;

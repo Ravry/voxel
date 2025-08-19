@@ -1,4 +1,7 @@
 .idea
+.vs
 build
 cmake-build-debug
 vendor
+assets/models
+assets/textures

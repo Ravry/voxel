@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
 #include <unordered_map>
-#include "shader.h"
-#include "texture.h"
+#include "engine/shader.h"
+#include "engine/texture.h"
 
 namespace Voxel::ResourceManager {
     template<typename T>

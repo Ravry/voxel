@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
-#include "mesh.h"
-#include "buffer.h"
-#include "material.h"
+#include "engine/mesh.h"
+#include "engine/buffer.h"
+#include "engine/material.h"
 
 namespace Voxel {
     class Instance3D : public Transform {

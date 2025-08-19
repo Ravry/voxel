@@ -14,8 +14,8 @@
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 #include <glm/glm.hpp>
 
-#include "log.h"
-#include "input.h"
+#include "core/log.h"
+#include "engine/input.h"
 
 JPH_SUPPRESS_WARNINGS
 

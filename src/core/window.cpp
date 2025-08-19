@@ -1,17 +1,11 @@
 #include <vector>
 #include <bitset>
-#include "window.h"
-#include "input.h"
-#include "renderer.h"
+#include "core/window.h"
+#include "engine/input.h"
 
 namespace Voxel {
-    double Time::Timer::delta_time {0};
-    static std::unique_ptr<Game::Renderer> renderer;
-    const char* renderer_c_str;
-
     void APIENTRY glDebugOutput(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char *message, const void *userParam)
     {
-        // ignore non-significant error/warning codes
         if(id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
 
         LOG("======================");
@@ -88,11 +82,10 @@ namespace Voxel {
                 glfwGetWindowSize(window, &width, &height);
             }
 
-            renderer->refactor(width, height);
+            // renderer->refactor(width, height);
         });
 
-        renderer_c_str = (const char*)glGetString(GL_RENDERER);
-        LOG("renderer: {}"  ,   renderer_c_str);
+        LOG("renderer: {}"  ,   (const char*)glGetString(GL_RENDERER));
         LOG("vendor: {}"    ,   (const char*)glGetString(GL_VENDOR));
         LOG("version: {}"   ,   (const char*)glGetString(GL_VERSION));
 
@@ -116,13 +109,13 @@ namespace Voxel {
 
             static double last_time = glfwGetTime();
             double time = glfwGetTime();
-            Time::Timer::delta_time = time - last_time;
+            Time::delta_time = time - last_time;
             last_time = time;
 
             Input::update();
             glfwPollEvents();
 
-            renderer->update(window, Time::Timer::delta_time);
+            renderer->update(window, Time::delta_time);
             renderer->render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

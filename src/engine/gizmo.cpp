@@ -1,6 +1,5 @@
-#include "gizmo.h"
-
-#include "misc.h"
+#include "engine/gizmo.h"
+#include "game/misc.h"
 
 namespace Voxel::Gizmo {
     bool show_gizmos {false};

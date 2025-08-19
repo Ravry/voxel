@@ -4,9 +4,9 @@
 #include "glm/glm.hpp"
 #include "noise.h"
 #include "misc.h"
-#include "resource_manager.h"
-#include "buffer.h"
-#include "mesh.h"
+#include "engine/resource_manager.h"
+#include "engine/buffer.h"
+#include "engine/mesh.h"
 
 namespace Voxel {
     namespace Game {
@@ -25,6 +25,8 @@ namespace Voxel {
             std::unique_ptr<SSBO> ssbo;
             bool is_empty {true};
             uint16_t voxels[SIZE * SIZE * 3] = {};
+
+            const uint16_t* get_voxels() const {return voxels;};
         private:
             void set_block(int x, int y, int z, BlockType block);
             void generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions);

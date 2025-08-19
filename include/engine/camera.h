@@ -1,8 +1,9 @@
 #pragma once
+#include "engine/transform.h"
+#include "engine/input.h"
+
 #include <algorithm>
 #include <GLFW/glfw3.h>
-#include "transform.h"
-#include "input.h"
 
 namespace Voxel {
     struct Plane {

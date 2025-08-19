@@ -1,12 +1,12 @@
 #pragma once
 #include <string_view>
+#include <memory>
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+#include "game/renderer.h"
 
 namespace Voxel {
-    extern const char* renderer_c_str;
-
     class Window {
     public:
         Window(int width, int height, std::string_view title);
@@ -15,5 +15,6 @@ namespace Voxel {
 
     private:
         GLFWwindow* window;
+        std::unique_ptr<Voxel::Game::Renderer> renderer;
     };
 }

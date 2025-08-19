@@ -1,7 +1,4 @@
-#include "buffer_allocator.h"
-
-#include <iostream>
-#include <ostream>
+#include "engine/buffer_allocator.h"
 
 namespace Voxel {
     BufferAllocator::BufferAllocator() {

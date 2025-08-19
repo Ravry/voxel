@@ -1,4 +1,4 @@
-#include "chunk_compound.h"
+#include "game/chunk_compound.h"
 
 
 namespace Voxel::Game {
@@ -36,9 +36,9 @@ namespace Voxel::Game {
     }
 
     void ChunkCompound::unload() {
-        // for (const auto& chunk : chunks) {
-        //     chunk->unload();
-        // }
+        for (const auto& chunk : chunks) {
+            chunk->unload();
+        }
     }
 
 }

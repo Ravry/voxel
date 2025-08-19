@@ -1,4 +1,4 @@
-#include "instance_3d.h"
+#include "engine/instance_3d.h"
 
 namespace Voxel {
     Instance3D::Instance3D(Mesh<float>* mesh, const VAO::AttribInfo& attrib_info, Material* material, glm::vec3 translation) : Transform(translation, glm::vec3(0), glm::vec3(1.f)), mesh(mesh), material(material) {

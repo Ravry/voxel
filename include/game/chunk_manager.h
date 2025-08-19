@@ -1,14 +1,14 @@
 #pragma once
 #include <thread>
 #include <condition_variable>
+#include "game/chunk_compound.h"
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
 #include <set>
-#include "log.h"
-#include "chunk_compound.h"
-#include "utils.h"
-#include "camera.h"
+#include "core/log.h"
+#include "engine/time.h"
+#include "engine/camera.h"
 
 namespace Voxel::Game {
     class ChunkManager {
@@ -19,10 +19,10 @@ namespace Voxel::Game {
         void render_chunk_compounds(Plane* frustum, Shader& shader);
 
         static void worker_func();
+        static int chunk_render_distance;
         static int num_chunks;
     private:
         void on_new_chunk_entered(glm::ivec3 chunk_space_position);
     private:
-        int chunk_render_distance {12};
     };
 }

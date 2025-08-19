@@ -1,6 +1,4 @@
-#include "buffer.h"
-
-#include <iostream>
+#include "engine/buffer.h"
 
 namespace Voxel {
     VBO::VBO() {

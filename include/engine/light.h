@@ -1,6 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
-#include "camera.h"
+#include "engine/camera.h"
 
 namespace Voxel {
     constexpr unsigned int SHADOW_MAP_SIZE {4096};
