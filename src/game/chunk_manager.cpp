@@ -27,6 +27,9 @@ namespace Voxel::Game {
     static std::unordered_map<int64_t, ChunkCompound*> chunks_render;
     static std::mutex chunks_render_mutex;
 
+    static std::mutex player_position_mutex;
+    static glm::ivec3 player_current_chunk_position {0};
+
     static Noise noise;
 
     int ChunkManager::num_chunks {0};
@@ -52,21 +55,30 @@ namespace Voxel::Game {
                 }
             }
 
-            for (auto& chunk : _chunks_new) {
-                chunk.second->build_chunk_meshes();
+            glm::vec3 _position;
+            {
+                std::lock_guard<std::mutex> lock_position(player_position_mutex);
+                _position = player_current_chunk_position;
+            }
+
+
+            for (auto& [_, chunk] : _chunks_new) {
+                if (glm::distance(chunk->position, _position) <= 100) {
+                    chunk->build_chunk_meshes();
+                }
             }
 
             {
                 std::lock_guard<std::mutex> lock_render(chunks_render_mutex);
-                for (auto& chunk : chunks_render) {
-                    if (!_chunks_new.contains(chunk.first)) {
-                        chunk.second->unload();
-                        chunks_render.erase(chunk.first);
+                for (auto& [chunk_key, chunk] : chunks_render) {
+                    if (!_chunks_new.contains(chunk_key)) {
+                        chunk->unload();
+                        chunks_render.erase(chunk_key);
                     }
                 }
 
-                for (auto& chunk : _chunks_new) {
-                    chunks_render[chunk.first] = chunk.second;
+                for (auto& [chunk_key, chunk] : _chunks_new) {
+                    chunks_render[chunk_key] = chunk;
                 }
             }
 
@@ -97,15 +109,20 @@ namespace Voxel::Game {
 
     void ChunkManager::render_chunk_compounds(Plane* frustum, Shader& shader) {
         std::lock_guard<std::mutex> lock_render(chunks_render_mutex);
-        for (auto& chunk : chunks_render) {
-            if (!is_box_in_frustum(frustum, chunk.second->position, chunk.second->position + glm::vec3(16.f, 16.f * num_chunks_per_compound, 16.f)))
+        for (auto& [_, chunk] : chunks_render) {
+            if (!is_box_in_frustum(frustum, chunk->position, chunk->position + glm::vec3(16.f, 16.f * num_chunks_per_compound, 16.f)))
                 continue;
 
-            chunk.second->render(frustum, shader);
+            chunk->render(frustum, shader);
         }
     }
 
     void ChunkManager::on_new_chunk_entered(glm::ivec3 position_chunk_space) {
+        {
+            std::lock_guard<std::mutex> lock_position(player_position_mutex);
+            player_current_chunk_position = position_chunk_space;
+        }
+
         const int render_distance_squared = chunk_render_distance * chunk_render_distance;
         {
             std::lock_guard<std::mutex> lock(chunks_requested_mutex);

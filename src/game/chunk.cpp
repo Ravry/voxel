@@ -143,6 +143,7 @@ namespace Voxel::Game {
         if (chunks.find(chunk_top_index) != chunks.end()) neighbor_chunks[5] = chunks[chunk_top_index].get();
 
         mesh = std::make_unique<Mesh<uint32_t>>(voxels, neighbor_chunks, SIZE, shape);
+        if (!mesh->vertices.empty()) Physics::PhysicsManager::get_instance().add_body_from_shape(shape, body_id, Vec3(position.x, position.y, position.z));
         built = true;
     }
 
@@ -177,6 +178,10 @@ namespace Voxel::Game {
 
     void Chunk::unload() {
         if (!allocated) return;
+
+        if (!body_id.IsInvalid()) {
+            Physics::PhysicsManager::get_instance().free_body(body_id);
+        }
 
         allocated = false;
         buffer_allocator->free_buffer(slot);

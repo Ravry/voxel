@@ -58,24 +58,22 @@ namespace Voxel::Physics {
         BodyInterface& body_interface = physics_system->GetBodyInterface();
         body_interface_ptr = &body_interface;
 
-        BodyCreationSettings sphere_settings(new SphereShape(0.5f), RVec3(0.0_r, 100.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
+        BodyCreationSettings sphere_settings(new SphereShape(0.5f), RVec3(200.0_r, 100.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
         sphere_id = body_interface.CreateAndAddBody(sphere_settings, EActivation::Activate);
         body_interface.SetLinearVelocity(sphere_id, Vec3(0.0f, -1.0f, 0.0f));
 
         physics_system->OptimizeBroadPhase();
-
-        LOG("physics engine created");
     }
 
     static int body_c {0};
-    void PhysicsManager::add_body_from_shape(JPH::Ref<Shape>& shape, RVec3 position) {
+    void PhysicsManager::add_body_from_shape(JPH::Ref<Shape>& shape, BodyID& id, RVec3 position) {
         if (!shape.GetPtr()) {
             LOG("ERROR: Null shape passed to add_body_from_shape");
             return;
         }
 
         BodyCreationSettings body_settings(shape, position, Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
-        BodyID id = body_interface_ptr->CreateAndAddBody(body_settings, EActivation::DontActivate);
+        id = body_interface_ptr->CreateAndAddBody(body_settings, EActivation::DontActivate);
 
         if (id.IsInvalid()) {
             // LOG("ERROR: Failed to create body");
@@ -85,6 +83,11 @@ namespace Voxel::Physics {
         }
 
         LOG("body_c: {}", body_c);
+    }
+
+    void PhysicsManager::free_body(BodyID& id) {
+        body_interface_ptr->RemoveBody(id);
+        body_interface_ptr->DestroyBody(id);
     }
 
 
@@ -127,8 +130,7 @@ namespace Voxel::Physics {
 
 
     PhysicsManager::~PhysicsManager() {
-        body_interface_ptr->RemoveBody(sphere_id);
-        body_interface_ptr->DestroyBody(sphere_id);
+        free_body(sphere_id);
         UnregisterTypes();
     }
 }

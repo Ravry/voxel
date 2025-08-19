@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdarg>
+#include <queue>
 #include <Jolt/Jolt.h>
 #include <Jolt/RegisterTypes.h>
 #include <Jolt/Core/Factory.h>
@@ -157,7 +158,9 @@ namespace Voxel::Physics {
         PhysicsManager();
         ~PhysicsManager();
 
-        void add_body_from_shape(Ref<Shape>& shape, RVec3 position);
+        void add_body_from_shape(JPH::Ref<Shape>& shape, BodyID& id, RVec3 position);
+        void free_body(BodyID& id);
+
         bool update(glm::vec3& position, glm::vec3& prev_position, float& lerp_t);
     private:
 

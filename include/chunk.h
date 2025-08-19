@@ -21,7 +21,6 @@ namespace Voxel {
             void unload();
 
             glm::ivec3 position;
-
             std::unique_ptr<Mesh<uint32_t>> mesh;
             std::unique_ptr<SSBO> ssbo;
             bool is_empty {true};
@@ -29,11 +28,14 @@ namespace Voxel {
         private:
             void set_block(int x, int y, int z, BlockType block);
             void generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions);
+
             BlockType* block_types_ptr {nullptr};
             bool built {false};
-            unsigned int slot {0};
             bool allocated {false};
+            unsigned int slot {0};
+
             JPH::Ref<JPH::Shape> shape;
+            JPH::BodyID body_id;
         };
     }
 }

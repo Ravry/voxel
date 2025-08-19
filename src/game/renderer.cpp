@@ -330,7 +330,6 @@ namespace Voxel::Game {
     glm::vec3 curr_position {200.f, 100.f, 0.f};
 
     void Renderer::update(GLFWwindow* window, float delta_time) {
-
         float lerp_t {1.f};
         physics_manager->update(curr_position, prev_position, lerp_t);
         glm::mat4& mat = instance_pig->get_matrix();
