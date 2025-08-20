@@ -1,7 +1,4 @@
 #include "game/chunk.h"
-#include "engine/buffer_allocator.h"
-#include "engine/gizmo.h"
-#include "engine/physics_manager.h"
 
 namespace Voxel::Game {
     struct ChunkPos {
@@ -17,7 +14,6 @@ namespace Voxel::Game {
             return x == other.x && y == other.y && z == other.z;
         }
     };
-
     struct ChunkPosHash {
         std::size_t operator()(const ChunkPos& pos) const {
             return std::hash<int32_t>()(pos.x) ^
@@ -25,19 +21,14 @@ namespace Voxel::Game {
                    (std::hash<int32_t>()(pos.z) << 2);
         }
     };
-
-    static std::unique_ptr<VAO> vao_box_gizmo;
-    static std::unique_ptr<BufferAllocator> buffer_allocator;
-    static std::unordered_map<ChunkPos, std::unique_ptr<Chunk>, ChunkPosHash> chunks;
-
-    Chunk* Chunk::create(int* height_map, BlockType* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) {
-        std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>(height_map, block_types, tree_positions, noise, position);
-        Chunk* ptr = chunk.get();
-        chunks[ChunkPos {position.x, position.y, position.z}] = std::move(chunk);
-        return ptr;
+    static std::unordered_map<ChunkPos, std::shared_ptr<Chunk>, ChunkPosHash> chunks;
+    std::shared_ptr<Chunk> Chunk::create(int* height_map, unsigned int* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) {
+        std::shared_ptr<Chunk> chunk = std::make_shared<Chunk>(height_map, block_types, tree_positions, noise, position);
+        chunks[ChunkPos {position.x, position.y, position.z}] = chunk;
+        return chunk;
     }
 
-    Chunk::Chunk(int* height_map, BlockType* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) : position(position), block_types_ptr(&block_types[(position.y * SIZE * SIZE)])
+    Chunk::Chunk(int* height_map, unsigned int* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) : position(position), block_types_ptr(&block_types[(position.y * SIZE * SIZE)])
     {
         generate_trees(noise, height_map, tree_positions);
 
@@ -50,7 +41,7 @@ namespace Voxel::Game {
                     int noise_value = height_map[x + (z * SIZE)];
                     int world_space_position_y = position.y + y;
 
-                    BlockType block = block_types_ptr[x + (y * SIZE) + (z * SIZE * SIZE)];
+                    unsigned int block = block_types_ptr[x + (y * SIZE) + (z * SIZE * SIZE)];
                     if (block == BlockType::Air) {
                         if (world_space_position_y == 0) block = BlockType::Bedrock;
                         else if (world_space_position_y == noise_value) {
@@ -102,7 +93,7 @@ namespace Voxel::Game {
         }
     }
 
-    void Chunk::set_block(int x, int y, int z, BlockType block) {
+    void Chunk::set_block(int x, int y, int z, unsigned int block) {
         block_types_ptr[x + (y * SIZE) + (z * SIZE * SIZE)] = block;
         int16_t bit {0};
         if (block != BlockType::Air) {
@@ -114,70 +105,77 @@ namespace Voxel::Game {
         uint16_t& row3 = voxels[x  + (z * SIZE) + ((SIZE * SIZE) * 2)] |= bit << y;
     }
 
+    bool Chunk::find_neighbours(std::vector<uint16_t*>& neighbours) {
+        ChunkPos chunk_left_index {position.x - SIZE, position.y, position.z};
+        if (chunks.find(chunk_left_index) != chunks.end()) neighbours[0] = chunks[chunk_left_index]->voxels;
+        else false;
+
+        ChunkPos chunk_right_index { position.x + SIZE, position.y, position.z };
+        if (chunks.find(chunk_right_index) != chunks.end()) neighbours[1] = chunks[chunk_right_index]->voxels;
+        else false;
+
+        ChunkPos chunk_front_index { position.x, position.y, position.z - SIZE };
+        if (chunks.find(chunk_front_index) != chunks.end()) neighbours[2] = chunks[chunk_front_index]->voxels;
+        else false;
+
+        ChunkPos chunk_back_index { position.x, position.y, position.z + SIZE };
+        if (chunks.find(chunk_back_index) != chunks.end()) neighbours[3] = chunks[chunk_back_index]->voxels;
+        else false;
+
+        ChunkPos chunk_bottom_index { position.x, position.y - SIZE, position.z };
+        if (chunks.find(chunk_bottom_index) != chunks.end()) neighbours[4] = chunks[chunk_bottom_index]->voxels;
+
+        ChunkPos chunk_top_index { position.x, position.y + SIZE, position.z };
+        if (chunks.find(chunk_top_index) != chunks.end()) neighbours[5] = chunks[chunk_top_index]->voxels;
+
+        return true;
+    }
+
     void Chunk::build_mesh() {
         if (built) return;
 
-        Chunk* neighbor_chunks[6] {nullptr};
+        std::vector<uint16_t*> neighbours {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+        if (!find_neighbours(neighbours)) return;
 
-        ChunkPos chunk_left_index {position.x - SIZE, position.y, position.z};
-        if (chunks.find(chunk_left_index) != chunks.end()) neighbor_chunks[0] = chunks[chunk_left_index].get();
-        else return;
-
-        ChunkPos chunk_right_index { position.x + SIZE, position.y, position.z };
-        if (chunks.find(chunk_right_index) != chunks.end()) neighbor_chunks[1] = chunks[chunk_right_index].get();
-        else return;
-
-        ChunkPos chunk_front_index { position.x, position.y, position.z - SIZE };
-        if (chunks.find(chunk_front_index) != chunks.end()) neighbor_chunks[2] = chunks[chunk_front_index].get();
-        else return;
-
-        ChunkPos chunk_back_index { position.x, position.y, position.z + SIZE };
-        if (chunks.find(chunk_back_index) != chunks.end()) neighbor_chunks[3] = chunks[chunk_back_index].get();
-        else return;
-
-        ChunkPos chunk_bottom_index { position.x, position.y - SIZE, position.z };
-        if (chunks.find(chunk_bottom_index) != chunks.end()) neighbor_chunks[4] = chunks[chunk_bottom_index].get();
-
-        ChunkPos chunk_top_index { position.x, position.y + SIZE, position.z };
-        if (chunks.find(chunk_top_index) != chunks.end()) neighbor_chunks[5] = chunks[chunk_top_index].get();
-
-        mesh = std::make_unique<Mesh<uint32_t>>(voxels, neighbor_chunks, SIZE, shape);
+        mesh = std::make_unique<Mesh<uint32_t>>(voxels, neighbours.data(), SIZE, shape);
         built = true;
+
+        if (mesh->vertices.size() == 0) return;
+        Physics::PhysicsManager::get_instance().add_body_from_shape(shape, body_id, Vec3(position.x, position.y, position.z));
     }
 
     void Chunk::render(Shader& shader) {
-        if (!vao_box_gizmo) {
-            vao_box_gizmo = std::make_unique<VAO>();
-            Gizmo::setup_line_box_gizmo(*vao_box_gizmo);
-        }
+        if (!built || mesh->indices.size() == 0) return;
 
-        if (!built) return;
+        auto& buffer_allocator = BufferAllocator::getInstance();
 
-        if (!buffer_allocator) buffer_allocator = std::make_unique<BufferAllocator>();
-
-        if (!allocated && mesh->indices.size() > 0) {
-            buffer_allocator->allocate_buffer(slot);
-            memcpy(buffer_allocator->vertex_buffer_objects[slot], mesh->vertices.data(), mesh->vertices.size() * sizeof(uint32_t));
-            memcpy(buffer_allocator->element_buffer_objects[slot], mesh->indices.data(), mesh->indices.size() * sizeof(unsigned int));
-            memcpy(buffer_allocator->shader_storage_buffer_objects[slot], block_types_ptr, 4096 * sizeof(unsigned int));
+        if (!allocated) {
+            buffer_allocator.allocate_buffer(slot);
+            memcpy(buffer_allocator.vertex_buffer_objects[slot], mesh->vertices.data(), mesh->vertices.size() * sizeof(uint32_t));
+            memcpy(buffer_allocator.element_buffer_objects[slot], mesh->indices.data(), mesh->indices.size() * sizeof(unsigned int));
+            memcpy(buffer_allocator.shader_storage_buffer_objects[slot], block_types_ptr, SIZE_CUBIC * sizeof(unsigned int));
             allocated = true;
         }
 
         shader
             .use()
             .set_uniform_mat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(position)));
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer_allocator->ssbo_ids[slot]);
-        glBindVertexArray(buffer_allocator->vertex_array_objects[slot]);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer_allocator.ssbo_ids[slot]);
+        glBindVertexArray(buffer_allocator.vertex_array_objects[slot]);
         glDrawElements(GL_TRIANGLES, mesh->indices.size(), GL_UNSIGNED_INT, (void*)0);
         glBindVertexArray(0);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-        Gizmo::render_line_box_gizmo(*vao_box_gizmo.get(), position, glm::vec3(16.f));
+        Gizmo::render_line_box_gizmo(position, glm::vec3(16.f));
     }
 
     void Chunk::unload() {
         if (!allocated) return;
 
+        if (!body_id.IsInvalid()) {
+            Physics::PhysicsManager::get_instance().remove_body(body_id);
+        }
+
         allocated = false;
-        buffer_allocator->free_buffer(slot);
+        BufferAllocator::getInstance().free_buffer(slot);
     }
 }

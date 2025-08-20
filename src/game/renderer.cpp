@@ -26,7 +26,10 @@ namespace Voxel::Game {
 
     static DirectionalLight directional_light(-60.f, 0, 0);
 
-    void create_attachments_for_msaa_framebuffer(unsigned int  width, unsigned int height) {
+    static std::unique_ptr<VAO> vao_box_gizmo;
+    static std::unique_ptr<VAO> vao_axis_gizmo;
+
+    void create_attachments_for_msaa_framebuffer(unsigned int width, unsigned int height) {
         Texture::TextureCreateInfo framebuffer_color_attachment_create_info {};
         framebuffer_color_attachment_create_info.target = GL_TEXTURE_2D_MULTISAMPLE;
         framebuffer_color_attachment_create_info.internal_format = GL_RGB;
@@ -207,7 +210,6 @@ namespace Voxel::Game {
 
         //GENERAL-INIT
         {
-            Gizmo::setup_axis_gizmo(vao_axis_gizmo);
             camera = &ResourceManager::create_resource<Camera>("camera_game", width, height, glm::vec3(0, 64, 0));
 
             chunk_manager = std::make_unique<ChunkManager>(camera->position);
@@ -308,13 +310,38 @@ namespace Voxel::Game {
             glViewport(0, 0, width, height);
             glClearColor(.4f, .4f, 1.f, 1.f);
         }
+
+        //MISC-INIT (GIZMO ETC.)
+        {
+            vao_box_gizmo = std::make_unique<VAO>();
+            vao_axis_gizmo = std::make_unique<VAO>();
+            Gizmo::setup_line_box_gizmo(vao_box_gizmo.get());
+            Gizmo::setup_axis_gizmo(vao_axis_gizmo.get());
+        }
+
+        //SUPPORTED-EXTENSIONS
+        // #define VOXEL_ENGINE_PRINT_DEBUG
+        {
+            #ifdef VOXEL_ENGINE_PRINT_DEBUG
+            int num_extensions;
+            glGetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
+
+            LOG("==============EXTENSIONS==============");
+            for (int i {0}; i < num_extensions; i++) {
+                const char* extension = (const char*)glGetStringi(GL_EXTENSIONS, i);
+                LOG("{}", extension);
+            }
+            LOG("======================================");
+            #endif
+        }
     }
 
     void Renderer::update(GLFWwindow* window, float delta_time) {
-        static glm::vec3 prev_position {200.f, 100.f, 0.f};
-        static glm::vec3 curr_position {200.f, 100.f, 0.f};
+        static glm::vec3 prev_position {20.f, 100.f, 0.f};
+        static glm::vec3 curr_position {20.f, 100.f, 0.f};
 
         float lerp_t {1.f};
+        physics_manager->commit_bodies();
         physics_manager->update(curr_position, prev_position, lerp_t);
         glm::mat4& mat = instance_pig->get_matrix();
         glm::vec3 real_pos = glm::mix(prev_position, curr_position, lerp_t);
@@ -383,7 +410,7 @@ namespace Voxel::Game {
                     (sizeof(Chunk)/1000000.f),
                     (sizeof(ChunkCompound)/1000000.f),
                     (
-                        (ChunkManager::num_chunks * num_chunks_per_compound * sizeof(Chunk)) +
+                        (ChunkManager::num_chunks * NUM_CHUNKS_PER_COMPOUND * sizeof(Chunk)) +
                         (ChunkManager::num_chunks * sizeof(ChunkCompound))
                     ) / 1000000.f
                 ).c_str()
@@ -446,7 +473,7 @@ namespace Voxel::Game {
                 instance_skybox->render();
 
                 glDepthFunc(GL_ALWAYS);
-                if (debug) Gizmo::render_axis_gizmo(vao_axis_gizmo, *camera);
+                if (debug) Gizmo::render_axis_gizmo(*camera);
                 glDepthFunc(GL_LESS);
             }
 

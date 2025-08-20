@@ -31,9 +31,8 @@ namespace Voxel::Game {
     private:
         unsigned int width, height;
         std::unique_ptr<ChunkManager> chunk_manager;
-        Camera* camera;
-        VAO vao_axis_gizmo;
         std::unique_ptr<UBO> matrices_ubo;
+        Camera* camera;
         Physics::PhysicsManager* physics_manager;
     };
 

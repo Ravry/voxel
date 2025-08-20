@@ -1,5 +1,4 @@
 #define STB_IMAGE_IMPLEMENTATION
-#include <iostream>
 #include "engine/texture.h"
 #include "core/log.h"
 

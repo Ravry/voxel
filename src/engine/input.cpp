@@ -1,5 +1,4 @@
 #include "engine/input.h"
-#include <vector>
 #include "core/log.h"
 
 namespace Voxel {

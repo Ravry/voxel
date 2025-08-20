@@ -1,7 +1,4 @@
-#include <vector>
-#include <bitset>
 #include "core/window.h"
-#include "engine/input.h"
 
 namespace Voxel {
     void APIENTRY glDebugOutput(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char *message, const void *userParam)
@@ -52,6 +49,7 @@ namespace Voxel {
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
         window = glfwCreateWindow(width, height, title.data(), nullptr, nullptr);
+        glfwSetWindowPos(window, 100, 100);
 
         glfwMakeContextCurrent(window);
 

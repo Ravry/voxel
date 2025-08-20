@@ -159,8 +159,9 @@ namespace Voxel::Physics {
         ~PhysicsManager();
 
         void add_body_from_shape(JPH::Ref<Shape>& shape, BodyID& id, RVec3 position);
+        void remove_body(BodyID& id);
+        void commit_bodies();
         void free_body(BodyID& id);
-
         bool update(glm::vec3& position, glm::vec3& prev_position, float& lerp_t);
     private:
 

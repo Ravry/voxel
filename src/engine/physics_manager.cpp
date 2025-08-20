@@ -58,32 +58,12 @@ namespace Voxel::Physics {
         BodyInterface& body_interface = physics_system->GetBodyInterface();
         body_interface_ptr = &body_interface;
 
-        BodyCreationSettings sphere_settings(new SphereShape(0.5f), RVec3(200.0_r, 100.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
+        BodyCreationSettings sphere_settings(new SphereShape(0.5f), RVec3(20.0_r, 100.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
         sphere_id = body_interface.CreateAndAddBody(sphere_settings, EActivation::Activate);
         body_interface.SetLinearVelocity(sphere_id, Vec3(0.0f, -1.0f, 0.0f));
 
         physics_system->OptimizeBroadPhase();
     }
-
-    void PhysicsManager::add_body_from_shape(JPH::Ref<Shape>& shape, BodyID& id, RVec3 position) {
-        if (!shape.GetPtr()) {
-            LOG("ERROR: Null shape passed to add_body_from_shape");
-            return;
-        }
-
-        BodyCreationSettings body_settings(shape, position, Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
-        id = body_interface_ptr->CreateAndAddBody(body_settings, EActivation::DontActivate);
-
-        if (id.IsInvalid()) {
-            LOG("ERROR: Failed to create body");
-        }
-    }
-
-    void PhysicsManager::free_body(BodyID& id) {
-        body_interface_ptr->RemoveBody(id);
-        body_interface_ptr->DestroyBody(id);
-    }
-
 
     bool PhysicsManager::update(glm::vec3& position, glm::vec3& prev_position, float& lerp_t) {
         static bool activate_physics {false};
@@ -108,7 +88,7 @@ namespace Voxel::Physics {
                 position.y = _position.GetY() - 0.5f;
                 position.z = _position.GetZ();
             } else {
-                body_interface_ptr->SetPosition(sphere_id, Vec3(200, 100.f, 0), EActivation::Activate);
+                body_interface_ptr->SetPosition(sphere_id, Vec3(25, 100.f, 0), EActivation::Activate);
             }
 
             const int cCollisionSteps = 1;
@@ -122,9 +102,63 @@ namespace Voxel::Physics {
         return true;
     }
 
+    std::vector<BodyID> body_ids;
+    static std::mutex body_ids_mutex;
+
+    //second-thread
+    void PhysicsManager::add_body_from_shape(JPH::Ref<Shape>& shape, BodyID& id, RVec3 position) {
+        BodyCreationSettings settings(shape, position, Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+        Body* body = body_interface_ptr->CreateBody(settings);
+        if (!body) return;
+        id = body->GetID();
+        {
+            std::lock_guard<std::mutex> lock(body_ids_mutex);
+            body_ids.push_back(id);
+        }
+    }
+
+    std::vector<BodyID> body_ids_to_remove;
+    static std::mutex body_ids_to_remove_mutex;
+
+    //second_thread
+    void PhysicsManager::remove_body(BodyID &id) {
+        std::lock_guard<std::mutex> lock(body_ids_to_remove_mutex);
+        body_ids_to_remove.push_back(id);
+    }
+
+    //main thread
+    void PhysicsManager::commit_bodies() {
+        {
+            std::lock_guard<std::mutex> lock(body_ids_to_remove_mutex);
+            body_interface_ptr->RemoveBodies(body_ids_to_remove.data(), body_ids_to_remove.size());
+            body_interface_ptr->DestroyBodies(body_ids_to_remove.data(), body_ids_to_remove.size());
+            body_ids_to_remove.clear();
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(body_ids_mutex);
+            if (body_ids.empty()) return;
+
+            BodyInterface::AddState add_state = body_interface_ptr->AddBodiesPrepare(
+                body_ids.data(),
+                static_cast<int>(body_ids.size())
+            );
+
+            body_interface_ptr->AddBodiesFinalize(
+                body_ids.data(),
+                body_ids.size(),
+                add_state,
+                EActivation::DontActivate
+            );
+
+            body_ids.clear();
+        }
+
+        physics_system->OptimizeBroadPhase();
+    }
+
 
     PhysicsManager::~PhysicsManager() {
-        free_body(sphere_id);
         UnregisterTypes();
     }
 }

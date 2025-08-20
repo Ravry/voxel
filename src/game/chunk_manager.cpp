@@ -71,6 +71,7 @@ namespace Voxel::Game {
 
             for (auto& [_, chunk] : _chunks_new) {
                 chunk->build_chunk_meshes();
+
             }
 
             {
@@ -114,7 +115,7 @@ namespace Voxel::Game {
     void ChunkManager::render_chunk_compounds(Plane* frustum, Shader& shader) {
         std::lock_guard<std::mutex> lock_render(chunks_render_mutex);
         for (auto& [_, chunk] : chunks_render) {
-            if (!is_box_in_frustum(frustum, chunk->position, chunk->position + glm::vec3(16.f, 16.f * num_chunks_per_compound, 16.f)))
+            if (!is_box_in_frustum(frustum, chunk->position, chunk->position + glm::vec3(SIZE, SIZE * NUM_CHUNKS_PER_COMPOUND, SIZE)))
                 continue;
 
             chunk->render(frustum, shader);

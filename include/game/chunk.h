@@ -1,37 +1,43 @@
 #pragma once
 #include <memory>
 #include <unordered_map>
-#include "glm/glm.hpp"
-#include "noise.h"
-#include "misc.h"
+#include <glm/glm.hpp>
+
 #include "engine/resource_manager.h"
 #include "engine/buffer.h"
 #include "engine/mesh.h"
+#include "engine/buffer_allocator.h"
+#include "engine/gizmo.h"
+#include "engine/physics_manager.h"
+#include "game/noise.h"
+#include "game/misc.h"
 
 namespace Voxel {
     namespace Game {
         class Chunk {
         public:
-            static Chunk* create(int* height_map, BlockType* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position);
+            static std::shared_ptr<Chunk> create(int* height_map, unsigned int* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position);
 
             Chunk() = default;
-            Chunk(int* height_map, BlockType* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position);
+            Chunk(int* height_map, unsigned int* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position);
             void build_mesh();
             void render(Shader& shader);
             void unload();
 
+        private:
+            void set_block(int x, int y, int z, unsigned int block);
+            void generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions);
+            bool find_neighbours(std::vector<uint16_t*>& neighbours);
+
+        public:
             glm::ivec3 position;
             std::unique_ptr<Mesh<uint32_t>> mesh;
             std::unique_ptr<SSBO> ssbo;
-            bool is_empty {true};
+
             uint16_t voxels[SIZE * SIZE * 3] = {};
+            unsigned int* block_types_ptr {nullptr};
 
-            const uint16_t* get_voxels() const {return voxels;};
-        private:
-            void set_block(int x, int y, int z, BlockType block);
-            void generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions);
-
-            BlockType* block_types_ptr {nullptr};
+            bool is_empty {true};
             bool built {false};
             bool allocated {false};
             unsigned int slot {0};

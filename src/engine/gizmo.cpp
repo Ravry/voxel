@@ -1,13 +1,16 @@
 #include "engine/gizmo.h"
-#include "game/misc.h"
 
 namespace Voxel::Gizmo {
     bool show_gizmos {false};
+    static VAO* vao_box_gizmo;
+    static VAO* vao_axis_gizmo;
 
-    void setup_line_box_gizmo(VAO& vao) {
+    void setup_line_box_gizmo(VAO* vao) {
+        vao_box_gizmo = vao;
+
         VBO vbo;
         EBO ebo;
-        vao.bind();
+        vao->bind();
         vbo.bind();
         ebo.bind();
         float line_vertices[] {
@@ -39,30 +42,32 @@ namespace Voxel::Gizmo {
             3, 7,
         };
         ebo.data(line_indices, sizeof(line_indices), GL_STATIC_DRAW);
-        vao.attrib(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-        vao.unbind();
+        vao->attrib(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        vao->unbind();
         vbo.unbind();
         ebo.unbind();
     }
 
-    void render_line_box_gizmo(VAO& vao, glm::vec3 position, glm::vec3 size) {
+    void render_line_box_gizmo(glm::vec3 position, glm::vec3 size) {
         if (!show_gizmos) return;
 
-        vao.bind();
+        vao_box_gizmo->bind();
         ResourceManager::get_resource<Shader>(SHADER_DEFAULT)
             .use()
             .set_uniform_mat4("model", glm::scale(glm::translate(glm::mat4(1.0f), position), size))
             .set_uniform_vec3("albedo", glm::vec3(1.f))
             .set_uniform_int("use_texture", 0);
         glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, (void*)0);
-        vao.unbind();
+        vao_box_gizmo->unbind();
     }
 
 
-    void setup_axis_gizmo(VAO& vao) {
+    void setup_axis_gizmo(VAO* vao) {
+        vao_axis_gizmo = vao;
+
         VBO vbo;
         EBO ebo;
-        vao.bind();
+        vao->bind();
         vbo.bind();
         ebo.bind();
         float line_vertices[] {
@@ -78,16 +83,16 @@ namespace Voxel::Gizmo {
             0, 3
         };
         ebo.data(line_indices, sizeof(line_indices), GL_STATIC_DRAW);
-        vao.attrib(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-        vao.unbind();
+        vao->attrib(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        vao->unbind();
         vbo.unbind();
         ebo.unbind();
     }
 
-    void render_axis_gizmo(VAO& vao, Camera& camera) {
-        vao.bind();
+    void render_axis_gizmo(Camera& camera) {
+        vao_axis_gizmo->bind();
 
-        glm::mat4 model = glm::scale(glm::translate(glm::mat4(1), (camera.position + camera.front)), glm::vec3(.05f));
+        glm::mat4 model = glm::scale(glm::translate(glm::mat4(1), (camera.position + camera.front)), glm::vec3(.03f));
 
         glLineWidth(4.0f);
         auto& shader = ResourceManager::get_resource<Shader>(SHADER_DEFAULT)
@@ -111,6 +116,6 @@ namespace Voxel::Gizmo {
         shader.set_uniform_vec3("albedo", glm::vec3(0, 0, 1));
         glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, (void*)(4 * sizeof(unsigned)));
 
-        vao.unbind();
+        vao_axis_gizmo->unbind();
     }
 }

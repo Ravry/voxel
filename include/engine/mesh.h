@@ -9,8 +9,6 @@
 #include "core/log.h"
 
 namespace Voxel {
-    namespace Game { class Chunk; }
-   
     template <typename T> class Mesh {
     public:
         uint32_t packed_vertex_data(
@@ -62,7 +60,7 @@ namespace Voxel {
         return result.Get();
     }
 
-        Mesh(uint16_t* voxels, Game::Chunk** chunks, const std::size_t size, JPH::Ref<JPH::Shape>& shape) 
+    Mesh(uint16_t* voxels, uint16_t** neighbour_chunk_voxels, const std::size_t size, JPH::Ref<JPH::Shape>& shape)
     {
         #pragma region face_culling
         std::vector<uint16_t> voxels_zy_top_face(size * size, 0);
@@ -80,10 +78,10 @@ namespace Voxel {
                 uint16_t row = voxels[j + (i * size)];
                 uint32_t row_neighbors_included = static_cast<uint32_t>(row) << 1;
 
-                uint16_t row_x_minus_one_neighbor = chunks[0] ? chunks[0]->get_voxels()[j + (i * size)] : 0;
+                uint16_t row_x_minus_one_neighbor = neighbour_chunk_voxels[0] ? neighbour_chunk_voxels[0][j + (i * size)] : 0;
                 row_neighbors_included |= row_x_minus_one_neighbor >> 15;
 
-                uint16_t row_x_plus_one_neighbor = chunks[1] ? chunks[1]->get_voxels()[j + (i * size)] : 0;
+                uint16_t row_x_plus_one_neighbor = neighbour_chunk_voxels[1] ? neighbour_chunk_voxels[1][j + (i * size)] : 0;
                 row_neighbors_included |= (row_x_plus_one_neighbor & 1) << 17;
 
                 uint16_t row_right_face = static_cast<uint16_t>((row_neighbors_included & ~(row_neighbors_included >> 1)) >> 1);
@@ -94,10 +92,10 @@ namespace Voxel {
                 uint16_t row2 = voxels[j + (i * size) + (size * size)];
                 uint32_t row2_neighbors_included = static_cast<uint32_t>(row2) << 1;
 
-                uint16_t row_z_minus_one_neighbor = chunks[2] ? chunks[2]->get_voxels()[j + (i * size) + (size * size)] : 0;
+                uint16_t row_z_minus_one_neighbor = neighbour_chunk_voxels[2] ? neighbour_chunk_voxels[2][j + (i * size) + (size * size)] : 0;
                 row2_neighbors_included |= row_z_minus_one_neighbor >> 15;
 
-                uint16_t row_z_plus_one_neighbor = chunks[3] ? chunks[3]->get_voxels()[j + (i * size) + (size * size)] : 0;
+                uint16_t row_z_plus_one_neighbor = neighbour_chunk_voxels[3] ? neighbour_chunk_voxels[3][j + (i * size) + (size * size)] : 0;
                 row2_neighbors_included |= (row_z_plus_one_neighbor & 1) << 17;
 
                 uint16_t row_front_face = static_cast<uint16_t>((row2_neighbors_included & ~(row2_neighbors_included >> 1)) >> 1);
@@ -107,10 +105,10 @@ namespace Voxel {
                 uint16_t row_vertical = voxels[i + (j * size) + (size * size * 2)];
                 uint32_t row_vertical_neighbors_included = static_cast<uint32_t>(row_vertical) << 1;
 
-                uint16_t row_y_minus_one_neighbor = chunks[4] ? chunks[4]->get_voxels()[i + (j * size) + (size * size * 2)] : 0;
+                uint16_t row_y_minus_one_neighbor = neighbour_chunk_voxels[4] ? neighbour_chunk_voxels[4][i + (j * size) + (size * size * 2)] : 0;
                 row_vertical_neighbors_included |= row_y_minus_one_neighbor >> 15;
 
-                uint16_t row_y_plus_one_neighbor = chunks[5] ? chunks[5]->get_voxels()[i + (j * size) + (size * size * 2)] : 0;
+                uint16_t row_y_plus_one_neighbor = neighbour_chunk_voxels[5] ? neighbour_chunk_voxels[5][i + (j * size) + (size * size * 2)] : 0;
                 row_vertical_neighbors_included |= (row_y_plus_one_neighbor & 1) << 17;
 
                 uint16_t row_top_face = static_cast<uint16_t>((row_vertical_neighbors_included & ~(row_vertical_neighbors_included >> 1)) >> 1);

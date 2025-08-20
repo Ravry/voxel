@@ -4,8 +4,6 @@
 #include "engine/camera.h"
 
 namespace Voxel::Game {
-    const int num_chunks_per_compound = 16;
-
     class ChunkCompound {
     public:
         ChunkCompound(Noise& noise, glm::vec3 position);
@@ -17,7 +15,7 @@ namespace Voxel::Game {
 
     private:
         int height_map[SIZE * SIZE];
-        BlockType block_types[SIZE * (SIZE * num_chunks_per_compound) * SIZE] {};
-        std::vector<Chunk*> chunks;
+        unsigned int block_types[SIZE * (SIZE * NUM_CHUNKS_PER_COMPOUND) * SIZE] {};
+        std::vector<std::shared_ptr<Chunk>> chunks;
     };
 }

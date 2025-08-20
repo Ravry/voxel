@@ -10,6 +10,11 @@ namespace Voxel {
 
     class BufferAllocator {
     public:
+        static BufferAllocator& getInstance() {
+            static BufferAllocator instance;
+            return instance;
+        }
+
         BufferAllocator();
         void allocate_buffer(unsigned int& slot);
         void free_buffer(unsigned int slot);
