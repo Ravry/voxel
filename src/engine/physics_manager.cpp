@@ -1,76 +1,70 @@
 #include "engine/physics_manager.h"
 
-
 namespace Voxel::Physics {
-    static void TraceImpl(const char *inFMT, ...)
-    {
+
+    void trace_implementation(const char *inFMT, ...) {
         va_list list;
         va_start(list, inFMT);
         char buffer[1024];
         vsnprintf(buffer, sizeof(buffer), inFMT, list);
         va_end(list);
         LOG("{}", buffer);
-    }
+    };
 
-    static bool AssertFailedImpl(const char *inExpression, const char *inMessage, const char *inFile, uint inLine)
-    {
+    bool assert_implementation(const char *inExpression, const char *inMessage, const char *inFile, uint inLine) {
         LOG("{}:{}: ({}) {}", inFile, inLine, inExpression, (inMessage != nullptr) ? inMessage : "");
         return true;
     };
 
-    static BodyID sphere_id;
+    struct PhysicsManager::implementation {
+        BPLayerInterfaceImpl broad_phase_layer_interface;
+        ObjectVsBroadPhaseLayerFilterImpl object_vs_broadphase_layer_filter;
+        ObjectLayerPairFilterImpl object_vs_object_layer_filter;
+        PhysicsSystem physics_system;
+        TempAllocatorImpl temp_allocator{10 * 1024 * 1024};
+        JobSystemThreadPool job_system{ cMaxPhysicsJobs, cMaxPhysicsBarriers, static_cast<int>(thread::hardware_concurrency() - 1)};
+        BodyInterface* body_interface_ptr;
+        BodyID sphere_id;
+    };
 
     PhysicsManager::PhysicsManager() {
-        RegisterDefaultAllocator();
-        factory = std::make_unique<Factory>();
-        Factory::sInstance = factory.get();
-        Trace = TraceImpl;
-        JPH_IF_ENABLE_ASSERTS(AssertFailed = AssertFailedImpl;)
-        RegisterTypes();
-        temp_allocator = std::make_unique<TempAllocatorImpl>(10 * 1024 * 1024);
-        job_system = std::make_unique<JobSystemThreadPool>(cMaxPhysicsJobs, cMaxPhysicsBarriers, thread::hardware_concurrency() - 1);
-        const uint cMaxBodies = 1024;
-        const uint cNumBodyMutexes = 1024;
-        const uint cMaxBodyPairs = 1024;
-        const uint cMaxContactConstraints = 1024;
+        static bool once {false};
+        if (!once) {
+            once = true;
+            RegisterDefaultAllocator();
+            static std::unique_ptr<Factory> factory = std::make_unique<Factory>();
+            Factory::sInstance = factory.get();
+            Trace = trace_implementation;
+            JPH_IF_ENABLE_ASSERTS(AssertFailed = assert_implementation);
+            RegisterTypes();
+        }
 
-        broad_phase_layer_interface = std::make_unique<BPLayerInterfaceImpl>();
-        object_vs_broadphase_layer_filter = std::make_unique<ObjectVsBroadPhaseLayerFilterImpl>();
-        object_vs_object_layer_filter = std::make_unique<ObjectLayerPairFilterImpl>();
+        m_implementation = std::make_unique<implementation>();
 
-        physics_system = std::make_unique<PhysicsSystem>();
-	    physics_system->Init(
+	    m_implementation->physics_system.Init(
 	        cMaxBodies,
 	        cNumBodyMutexes,
 	        cMaxBodyPairs,
 	        cMaxContactConstraints,
-	        *broad_phase_layer_interface,
-	        *object_vs_broadphase_layer_filter,
-	        *object_vs_object_layer_filter
+	        m_implementation->broad_phase_layer_interface,
+	        m_implementation->object_vs_broadphase_layer_filter,
+	        m_implementation->object_vs_object_layer_filter
 	    );
 
-        body_activation_listener = std::make_unique<MyBodyActivationListener>();
-        physics_system->SetBodyActivationListener(body_activation_listener.get());
-
-        contact_listener = std::make_unique<MyContactListener>();
-        physics_system->SetContactListener(contact_listener.get());
-
-        BodyInterface& body_interface = physics_system->GetBodyInterface();
-        body_interface_ptr = &body_interface;
+        m_implementation->body_interface_ptr = &m_implementation->physics_system.GetBodyInterface();
 
         BodyCreationSettings sphere_settings(new SphereShape(0.5f), RVec3(20.0_r, 100.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
-        sphere_id = body_interface.CreateAndAddBody(sphere_settings, EActivation::Activate);
-        body_interface.SetLinearVelocity(sphere_id, Vec3(0.0f, -1.0f, 0.0f));
+        m_implementation->sphere_id = m_implementation->body_interface_ptr->CreateAndAddBody(sphere_settings, EActivation::Activate);
+        m_implementation->body_interface_ptr->SetLinearVelocity(m_implementation->sphere_id, Vec3(0.0f, -1.0f, 0.0f));
 
-        physics_system->OptimizeBroadPhase();
+        m_implementation->physics_system.OptimizeBroadPhase();
     }
 
     bool PhysicsManager::update(glm::vec3& position, glm::vec3& prev_position, float& lerp_t) {
         static bool activate_physics {false};
         static float accumulator {0.f};
 
-        if (Input::is_key_pressed(GLFW_KEY_F))
-            activate_physics = true;
+        if (Input::is_key_pressed(GLFW_KEY_F)) activate_physics = true;
 
         accumulator += Time::delta_time;
 
@@ -82,17 +76,22 @@ namespace Voxel::Physics {
 
             prev_position = position;
 
-            if (body_interface_ptr->IsActive(sphere_id)) {
-                RVec3 _position = body_interface_ptr->GetCenterOfMassPosition(sphere_id);
+            if (m_implementation->body_interface_ptr->IsActive(m_implementation->sphere_id)) {
+                RVec3 _position = m_implementation->body_interface_ptr->GetCenterOfMassPosition(m_implementation->sphere_id);
                 position.x = _position.GetX();
                 position.y = _position.GetY() - 0.5f;
                 position.z = _position.GetZ();
             } else {
-                body_interface_ptr->SetPosition(sphere_id, Vec3(25, 100.f, 0), EActivation::Activate);
+                m_implementation->body_interface_ptr->SetPosition(m_implementation->sphere_id, Vec3(25, 100.f, 0), EActivation::Activate);
             }
 
             const int cCollisionSteps = 1;
-            physics_system->Update(cDeltaTime, cCollisionSteps, temp_allocator.get(), job_system.get());
+            m_implementation->physics_system.Update(
+                cDeltaTime,
+                cCollisionSteps,
+                &m_implementation->temp_allocator,
+                &m_implementation->job_system
+            );
 
             accumulator -= cDeltaTime;
         }
@@ -104,59 +103,6 @@ namespace Voxel::Physics {
 
     std::vector<BodyID> body_ids;
     static std::mutex body_ids_mutex;
-
-    //second-thread
-    void PhysicsManager::add_body_from_shape(JPH::Ref<Shape>& shape, BodyID& id, RVec3 position) {
-        BodyCreationSettings settings(shape, position, Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
-        Body* body = body_interface_ptr->CreateBody(settings);
-        if (!body) return;
-        id = body->GetID();
-        {
-            std::lock_guard<std::mutex> lock(body_ids_mutex);
-            body_ids.push_back(id);
-        }
-    }
-
-    std::vector<BodyID> body_ids_to_remove;
-    static std::mutex body_ids_to_remove_mutex;
-
-    //second_thread
-    void PhysicsManager::remove_body(BodyID &id) {
-        std::lock_guard<std::mutex> lock(body_ids_to_remove_mutex);
-        body_ids_to_remove.push_back(id);
-    }
-
-    //main thread
-    void PhysicsManager::commit_bodies() {
-        {
-            std::lock_guard<std::mutex> lock(body_ids_to_remove_mutex);
-            body_interface_ptr->RemoveBodies(body_ids_to_remove.data(), body_ids_to_remove.size());
-            body_interface_ptr->DestroyBodies(body_ids_to_remove.data(), body_ids_to_remove.size());
-            body_ids_to_remove.clear();
-        }
-
-        {
-            std::lock_guard<std::mutex> lock(body_ids_mutex);
-            if (body_ids.empty()) return;
-
-            BodyInterface::AddState add_state = body_interface_ptr->AddBodiesPrepare(
-                body_ids.data(),
-                static_cast<int>(body_ids.size())
-            );
-
-            body_interface_ptr->AddBodiesFinalize(
-                body_ids.data(),
-                body_ids.size(),
-                add_state,
-                EActivation::DontActivate
-            );
-
-            body_ids.clear();
-        }
-
-        physics_system->OptimizeBroadPhase();
-    }
-
 
     PhysicsManager::~PhysicsManager() {
         UnregisterTypes();

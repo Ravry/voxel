@@ -29,8 +29,34 @@ namespace Voxel::Game {
     }
 
 
-    constexpr int SIZE_VALUE_IN_BITS = 8;
-    constexpr int NUM_VALUES_IN_ONE_UINT = 4;
+    void Chunk::generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions) {
+        const int stem_height = 2 + rand() % 3;
+        const int leafs_height = 3 + rand() % 2;
+        for (auto& tree_position : tree_positions) {
+            int ground_y = height_map[tree_position.x + (tree_position.y * SIZE)];
+            int chunk_y = (ground_y / SIZE) * SIZE;
+            if (ground_y > 96 || position.y != chunk_y)
+                break;
+
+            int ground_y_chunk_space = (ground_y % SIZE) + 1;
+            if (noise.fetch_cave(position.x + tree_position.x, position.y + ground_y_chunk_space - 1, position.z + tree_position.y) >= .7f)
+                continue;
+
+            for (int h = 0; h < stem_height; h++) {
+                int y = ground_y_chunk_space + h;
+                set_block_type(tree_position.x + ((y%SIZE) * SIZE) + (tree_position.y * SIZE * SIZE) + ((y/SIZE) * SIZE * SIZE *SIZE), BlockType::Wood);
+            }
+
+            for (int y = ground_y_chunk_space + stem_height; y < ground_y_chunk_space + stem_height + leafs_height; y++) {
+                for (int z = tree_position.y - 1; z < tree_position.y + 2; z++) {
+                    for (int x = tree_position.x - 1; x < tree_position.x + 2; x++)
+                    {
+                        set_block_type(x + ((y%SIZE) * SIZE) + (z * SIZE * SIZE) + ((y/SIZE) * SIZE * SIZE *SIZE), BlockType::Leafs);
+                    }
+                }
+            }
+        }
+    }
 
     Chunk::Chunk(
         int* height_map,
@@ -82,13 +108,7 @@ namespace Voxel::Game {
     }
 
     void Chunk::set_block_type(int x, int y, int z, uint8_t block) {
-        int linear_index = x + (y * SIZE) + (z * SIZE * SIZE);
-        int block_index = linear_index / NUM_VALUES_IN_ONE_UINT;
-        auto& area = block_types_ptr[block_index];
-        int bit_position = (linear_index % NUM_VALUES_IN_ONE_UINT) * SIZE_VALUE_IN_BITS;
-
-        area &= ~(0xFF << bit_position);
-        area |= (static_cast<unsigned int>(block) << bit_position);
+        set_block_type(x + (y * SIZE) + (z * SIZE * SIZE), block);
     }
 
     uint8_t Chunk::access_block_type(int x, int y, int z) {
@@ -177,37 +197,6 @@ namespace Voxel::Game {
         glBindVertexArray(0);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
         Gizmo::render_line_box_gizmo(position, glm::vec3(16.f));
-    }
-
-    void Chunk::generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions) {
-        const int stem_height = 2 + rand() % 3;
-        const int leafs_height = 3 + rand() % 2;
-        for (auto& tree_position : tree_positions) {
-            int ground_y = height_map[tree_position.x + (tree_position.y * SIZE)];
-            int chunk_y = (ground_y / SIZE) * SIZE;
-            if (ground_y > 96 || position.y != chunk_y)
-                break;
-
-            int ground_y_chunk_space = (ground_y % SIZE) + 1;
-            if (noise.fetch_cave(position.x + tree_position.x, position.y + ground_y_chunk_space - 1, position.z + tree_position.y) >= .7f)
-                continue;
-
-            for (int h = 0; h < stem_height; h++) {
-                int y = ground_y_chunk_space + h;
-                // block_types_ptr[tree_position.x + ((y%SIZE) * SIZE) + (tree_position.y * SIZE * SIZE) + ((y/SIZE) * SIZE * SIZE *SIZE)] = BlockType::Wood;
-                set_block_type(tree_position.x + ((y%SIZE) * SIZE) + (tree_position.y * SIZE * SIZE) + ((y/SIZE) * SIZE * SIZE *SIZE), BlockType::Wood);
-            }
-
-            for (int y = ground_y_chunk_space + stem_height; y < ground_y_chunk_space + stem_height + leafs_height; y++) {
-                for (int z = tree_position.y - 1; z < tree_position.y + 2; z++) {
-                    for (int x = tree_position.x - 1; x < tree_position.x + 2; x++)
-                    {
-                        // block_types_ptr[x + ((y%SIZE) * SIZE) + (z * SIZE * SIZE) + ((y/SIZE) * SIZE * SIZE *SIZE)] = BlockType::Leafs;
-                        set_block_type(x + ((y%SIZE) * SIZE) + (z * SIZE * SIZE) + ((y/SIZE) * SIZE * SIZE *SIZE), BlockType::Leafs);
-                    }
-                }
-            }
-        }
     }
 
     void Chunk::unload() {

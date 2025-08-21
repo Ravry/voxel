@@ -30,7 +30,7 @@ namespace Voxel {
             for (size_t i {0}; i < aiGetMaterialTextureCount(material, aiTextureType_DIFFUSE); i++) {
                 aiString str;
                 material->GetTexture(aiTextureType_DIFFUSE, i, &str);
-
+                std::string formatted_path = std::format("{}/{}", model_path, str.C_Str()).c_str();
                 Texture::TextureCreateInfo texture_create_info { GL_TEXTURE_2D };
                 texture_create_info.type = GL_UNSIGNED_BYTE;
                 texture_create_info.format = GL_RGBA;
@@ -38,7 +38,7 @@ namespace Voxel {
                 texture_create_info.wrap = GL_CLAMP_TO_EDGE;
                 texture_create_info.min_filter = GL_NEAREST;
                 texture_create_info.mag_filter = GL_NEAREST;
-                texture_create_info.file_path = std::format("{}/{}", model_path, str.C_Str()).c_str();
+                texture_create_info.file_path = formatted_path.c_str();
                 texture = std::make_unique<Texture>(texture_create_info);
             }
         }

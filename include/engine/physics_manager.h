@@ -109,44 +109,11 @@ namespace Voxel::Physics {
         }
     };
 
-    class MyBodyActivationListener : public BodyActivationListener
-    {
-    public:
-        virtual void OnBodyActivated(const BodyID &inBodyID, uint64 inBodyUserData) override
-        {
-            LOG("A body got activated");
-        }
-
-        virtual void OnBodyDeactivated(const BodyID &inBodyID, uint64 inBodyUserData) override
-        {
-            LOG("A body went to sleep");
-        }
-    };
-
-    class MyContactListener : public ContactListener
-    {
-    public:
-        virtual ValidateResult OnContactValidate(const Body &inBody1, const Body &inBody2, RVec3Arg inBaseOffset, const CollideShapeResult &inCollisionResult) override
-        {
-            LOG("Contact validate callback");
-            return ValidateResult::AcceptAllContactsForThisBodyPair;
-        }
-
-        virtual void OnContactAdded(const Body &inBody1, const Body &inBody2, const ContactManifold &inManifold, ContactSettings &ioSettings) override
-        {
-            LOG("A contact was added");
-        }
-
-        virtual void OnContactPersisted(const Body &inBody1, const Body &inBody2, const ContactManifold &inManifold, ContactSettings &ioSettings) override
-        {
-            LOG("A contact was persisted");
-        }
-
-        virtual void OnContactRemoved(const SubShapeIDPair &inSubShapePair) override
-        {
-            LOG("A contact was removed");
-        }
-    };
+    constexpr uint cMaxBodies = { 1024 };
+    constexpr uint cNumBodyMutexes = { 0 };
+    constexpr uint cMaxBodyPairs = { 1024 };
+    constexpr uint cMaxContactConstraints { 1024 };
+    constexpr float cDeltaTime { 1.0f / 60.0f };
 
     class PhysicsManager {
     public:
@@ -157,24 +124,10 @@ namespace Voxel::Physics {
 
         PhysicsManager();
         ~PhysicsManager();
-
-        void add_body_from_shape(JPH::Ref<Shape>& shape, BodyID& id, RVec3 position);
-        void remove_body(BodyID& id);
-        void commit_bodies();
-        void free_body(BodyID& id);
         bool update(glm::vec3& position, glm::vec3& prev_position, float& lerp_t);
-    private:
 
-        std::unique_ptr<BPLayerInterfaceImpl> broad_phase_layer_interface;
-        std::unique_ptr<ObjectVsBroadPhaseLayerFilterImpl> object_vs_broadphase_layer_filter;
-        std::unique_ptr<ObjectLayerPairFilterImpl> object_vs_object_layer_filter;
-        std::unique_ptr<PhysicsSystem> physics_system;
-        std::unique_ptr<MyBodyActivationListener> body_activation_listener;
-        std::unique_ptr<MyContactListener> contact_listener;
-        std::unique_ptr<Factory> factory;
-        std::unique_ptr<TempAllocatorImpl> temp_allocator;
-        std::unique_ptr<JobSystemThreadPool> job_system;
-        BodyInterface* body_interface_ptr;
-        static constexpr float cDeltaTime { 1.0f / 60.0f };
+    private:
+        struct implementation;
+        std::unique_ptr<implementation> m_implementation;
     };
 }

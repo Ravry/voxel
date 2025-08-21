@@ -341,7 +341,6 @@ namespace Voxel::Game {
         static glm::vec3 curr_position {20.f, 100.f, 0.f};
 
         float lerp_t {1.f};
-        physics_manager->commit_bodies();
         physics_manager->update(curr_position, prev_position, lerp_t);
         glm::mat4& mat = instance_pig->get_matrix();
         glm::vec3 real_pos = glm::mix(prev_position, curr_position, lerp_t);

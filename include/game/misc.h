@@ -26,6 +26,8 @@ namespace Voxel::Game {
 
     constexpr int SIZE = sizeof(uint16_t) * 8;
     constexpr int SIZE_CUBIC = SIZE * SIZE * SIZE;
+    constexpr int SIZE_VALUE_IN_BITS = 8;
+    constexpr int NUM_VALUES_IN_ONE_UINT = 4;
     constexpr int NUM_CHUNKS_PER_COMPOUND = 16;
 
     //NOTE: LSB is indicator for MULTI-IMAGE-BLOCK-TYPES

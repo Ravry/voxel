@@ -18,7 +18,7 @@ namespace Voxel::Game {
     }
 
     static std::thread worker_thread;
-    static std::atomic<bool> worker_should_exit;
+    static std::atomic<bool> worker_should_exit {false};
     static std::condition_variable worker_cv;
 
     static std::unordered_map<int64_t, std::unique_ptr<ChunkCompound>> chunks_cached;
@@ -76,10 +76,12 @@ namespace Voxel::Game {
 
             {
                 std::lock_guard<std::mutex> lock_render(chunks_render_mutex);
-                for (auto& [chunk_key, chunk] : chunks_render) {
-                    if (!_chunks_new.contains(chunk_key)) {
-                        chunk->unload();
-                        chunks_render.erase(chunk_key);
+                for (auto it = chunks_render.begin(); it != chunks_render.end(); ) {
+                    if (!_chunks_new.contains(it->first)) {
+                        it->second->unload();
+                        it = chunks_render.erase(it);
+                    } else {
+                        ++it;
                     }
                 }
 
