@@ -25,10 +25,12 @@ namespace Voxel {
             void unload();
 
         private:
-            void set_block(int x, int y, int z, unsigned int block);
+            void set_block_type(int index, uint8_t block);
+            void set_block_type(int x, int y, int z, uint8_t block);
+            uint8_t access_block_type(int x, int y, int z);
+            void set_block(int x, int y, int z, uint8_t block);
             void generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions);
             bool find_neighbours(std::vector<uint16_t*>& neighbours);
-
         public:
             glm::ivec3 position;
             std::unique_ptr<Mesh<uint32_t>> mesh;

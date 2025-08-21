@@ -38,12 +38,25 @@ float shadow_calculation(vec4 _frag_pos) {
     return shadow;
 }
 
+ uint access_block_type(int x, int y, int z) {
+    int SIZE = 16;
+    int SIZE_VALUE_IN_BITS = 8;
+    int NUM_VALUES_IN_ONE_UINT = 4;
+
+    int linear_index = x + (y * SIZE) + (z * SIZE * SIZE);
+    int block_index = linear_index / NUM_VALUES_IN_ONE_UINT;
+    uint area = blockData.blockTypes[block_index];
+    int bit_position = (linear_index % NUM_VALUES_IN_ONE_UINT) * SIZE_VALUE_IN_BITS;
+    uint block = uint((area >> bit_position) & 0xFF);
+    return block;
+}
+
 void main() {
     const float epsilon = 0.5;
     ivec3 block_coords = ivec3(fs_in.vertex - normalize(fs_in.normal) * .01);
     block_coords = clamp(block_coords, ivec3(0), ivec3(15));
 
-    uint block_type = blockData.blockTypes[block_coords.x + (block_coords.y * 16) + (block_coords.z * 16 * 16)];
+    uint block_type = access_block_type(block_coords.x, block_coords.y, block_coords.z);
 
     uint diff_faces = block_type & 0x1;
     uint face = uint(round(dot(normalize(fs_in.normal), vec3(0, 1, 0)) + 1));

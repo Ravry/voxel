@@ -28,7 +28,16 @@ namespace Voxel::Game {
         return chunk;
     }
 
-    Chunk::Chunk(int* height_map, unsigned int* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position) : position(position), block_types_ptr(&block_types[(position.y * SIZE * SIZE)])
+
+    constexpr int SIZE_VALUE_IN_BITS = 8;
+    constexpr int NUM_VALUES_IN_ONE_UINT = 4;
+
+    Chunk::Chunk(
+        int* height_map,
+        unsigned int* block_types,
+        std::vector<glm::ivec2>& tree_positions,
+        Noise& noise, glm::ivec3 position
+    ) : position(position), block_types_ptr(&block_types[(position.y * SIZE * SIZE) / NUM_VALUES_IN_ONE_UINT])
     {
         generate_trees(noise, height_map, tree_positions);
 
@@ -41,7 +50,7 @@ namespace Voxel::Game {
                     int noise_value = height_map[x + (z * SIZE)];
                     int world_space_position_y = position.y + y;
 
-                    unsigned int block = block_types_ptr[x + (y * SIZE) + (z * SIZE * SIZE)];
+                    unsigned int block = access_block_type(x, y, z);
                     if (block == BlockType::Air) {
                         if (world_space_position_y == 0) block = BlockType::Bedrock;
                         else if (world_space_position_y == noise_value) {
@@ -64,42 +73,44 @@ namespace Voxel::Game {
         }
     }
 
-    void Chunk::generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions) {
-        const int stem_height = 2 + rand() % 3;
-        const int leafs_height = 3 + rand() % 2;
-        for (auto& tree_position : tree_positions) {
-            int ground_y = height_map[tree_position.x + (tree_position.y * SIZE)];
-            int chunk_y = (ground_y / SIZE) * SIZE;
-            if (ground_y > 96 || position.y != chunk_y)
-                break;
-
-            int ground_y_chunk_space = (ground_y % SIZE) + 1;
-            if (noise.fetch_cave(position.x + tree_position.x, position.y + ground_y_chunk_space - 1, position.z + tree_position.y) >= .7f)
-                continue;
-
-            for (int h = 0; h < stem_height; h++) {
-                int y = ground_y_chunk_space + h;
-                block_types_ptr[tree_position.x + ((y%SIZE) * SIZE) + (tree_position.y * SIZE * SIZE) + ((y/SIZE) * SIZE * SIZE *SIZE)] = BlockType::Wood;
-            }
-
-            for (int y = ground_y_chunk_space + stem_height; y < ground_y_chunk_space + stem_height + leafs_height; y++) {
-                for (int z = tree_position.y - 1; z < tree_position.y + 2; z++) {
-                    for (int x = tree_position.x - 1; x < tree_position.x + 2; x++)
-                    {
-                        block_types_ptr[x + ((y%SIZE) * SIZE) + (z * SIZE * SIZE) + ((y/SIZE) * SIZE * SIZE *SIZE)] = BlockType::Leafs;
-                    }
-                }
-            }
-        }
+    void Chunk::set_block_type(int index, uint8_t block) {
+        int block_index = index / NUM_VALUES_IN_ONE_UINT;
+        auto& area = block_types_ptr[block_index];
+        int bit_position = (index % NUM_VALUES_IN_ONE_UINT) * SIZE_VALUE_IN_BITS;
+        area &= ~(0xFF << bit_position);
+        area |= (static_cast<unsigned int>(block) << bit_position);
     }
 
-    void Chunk::set_block(int x, int y, int z, unsigned int block) {
-        block_types_ptr[x + (y * SIZE) + (z * SIZE * SIZE)] = block;
+    void Chunk::set_block_type(int x, int y, int z, uint8_t block) {
+        int linear_index = x + (y * SIZE) + (z * SIZE * SIZE);
+        int block_index = linear_index / NUM_VALUES_IN_ONE_UINT;
+        auto& area = block_types_ptr[block_index];
+        int bit_position = (linear_index % NUM_VALUES_IN_ONE_UINT) * SIZE_VALUE_IN_BITS;
+
+        area &= ~(0xFF << bit_position);
+        area |= (static_cast<unsigned int>(block) << bit_position);
+    }
+
+    uint8_t Chunk::access_block_type(int x, int y, int z) {
+        int linear_index = x + (y * SIZE) + (z * SIZE * SIZE);
+        int block_index = linear_index / NUM_VALUES_IN_ONE_UINT;
+        auto& area = block_types_ptr[block_index];
+        int bit_position = (linear_index % NUM_VALUES_IN_ONE_UINT) * SIZE_VALUE_IN_BITS;
+        uint8_t block = static_cast<uint8_t>(
+            (area >> bit_position) & 0xFF
+        );
+        return block;
+    }
+
+    void Chunk::set_block(int x, int y, int z, uint8_t block) {
+        set_block_type(x, y, z, block);
+
         int16_t bit {0};
         if (block != BlockType::Air) {
             bit = 1;
             is_empty = false;
         }
+
         uint16_t& row1 = voxels[z + (y * SIZE)] |= bit << x;
         uint16_t& row2 = voxels[x  + (y * SIZE) + (SIZE * SIZE)] |= bit << z;
         uint16_t& row3 = voxels[x  + (z * SIZE) + ((SIZE * SIZE) * 2)] |= bit << y;
@@ -140,8 +151,8 @@ namespace Voxel::Game {
         mesh = std::make_unique<Mesh<uint32_t>>(voxels, neighbours.data(), SIZE, shape);
         built = true;
 
-        if (mesh->vertices.size() == 0) return;
-        Physics::PhysicsManager::get_instance().add_body_from_shape(shape, body_id, Vec3(position.x, position.y, position.z));
+        // if (mesh->vertices.size() == 0) return;
+        // Physics::PhysicsManager::get_instance().add_body_from_shape(shape, body_id, Vec3(position.x, position.y, position.z));
     }
 
     void Chunk::render(Shader& shader) {
@@ -153,7 +164,7 @@ namespace Voxel::Game {
             buffer_allocator.allocate_buffer(slot);
             memcpy(buffer_allocator.vertex_buffer_objects[slot], mesh->vertices.data(), mesh->vertices.size() * sizeof(uint32_t));
             memcpy(buffer_allocator.element_buffer_objects[slot], mesh->indices.data(), mesh->indices.size() * sizeof(unsigned int));
-            memcpy(buffer_allocator.shader_storage_buffer_objects[slot], block_types_ptr, SIZE_CUBIC * sizeof(unsigned int));
+            memcpy(buffer_allocator.shader_storage_buffer_objects[slot], block_types_ptr, ((SIZE * SIZE * SIZE) / 4) * sizeof(unsigned int));
             allocated = true;
         }
 
@@ -168,12 +179,43 @@ namespace Voxel::Game {
         Gizmo::render_line_box_gizmo(position, glm::vec3(16.f));
     }
 
+    void Chunk::generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions) {
+        const int stem_height = 2 + rand() % 3;
+        const int leafs_height = 3 + rand() % 2;
+        for (auto& tree_position : tree_positions) {
+            int ground_y = height_map[tree_position.x + (tree_position.y * SIZE)];
+            int chunk_y = (ground_y / SIZE) * SIZE;
+            if (ground_y > 96 || position.y != chunk_y)
+                break;
+
+            int ground_y_chunk_space = (ground_y % SIZE) + 1;
+            if (noise.fetch_cave(position.x + tree_position.x, position.y + ground_y_chunk_space - 1, position.z + tree_position.y) >= .7f)
+                continue;
+
+            for (int h = 0; h < stem_height; h++) {
+                int y = ground_y_chunk_space + h;
+                // block_types_ptr[tree_position.x + ((y%SIZE) * SIZE) + (tree_position.y * SIZE * SIZE) + ((y/SIZE) * SIZE * SIZE *SIZE)] = BlockType::Wood;
+                set_block_type(tree_position.x + ((y%SIZE) * SIZE) + (tree_position.y * SIZE * SIZE) + ((y/SIZE) * SIZE * SIZE *SIZE), BlockType::Wood);
+            }
+
+            for (int y = ground_y_chunk_space + stem_height; y < ground_y_chunk_space + stem_height + leafs_height; y++) {
+                for (int z = tree_position.y - 1; z < tree_position.y + 2; z++) {
+                    for (int x = tree_position.x - 1; x < tree_position.x + 2; x++)
+                    {
+                        // block_types_ptr[x + ((y%SIZE) * SIZE) + (z * SIZE * SIZE) + ((y/SIZE) * SIZE * SIZE *SIZE)] = BlockType::Leafs;
+                        set_block_type(x + ((y%SIZE) * SIZE) + (z * SIZE * SIZE) + ((y/SIZE) * SIZE * SIZE *SIZE), BlockType::Leafs);
+                    }
+                }
+            }
+        }
+    }
+
     void Chunk::unload() {
         if (!allocated) return;
 
-        if (!body_id.IsInvalid()) {
-            Physics::PhysicsManager::get_instance().remove_body(body_id);
-        }
+        // if (!body_id.IsInvalid()) {
+        //     Physics::PhysicsManager::get_instance().remove_body(body_id);
+        // }
 
         allocated = false;
         BufferAllocator::getInstance().free_buffer(slot);
