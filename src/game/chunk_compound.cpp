@@ -1,6 +1,5 @@
 #include "game/chunk_compound.h"
 
-
 namespace Voxel::Game {
     ChunkCompound::ChunkCompound(Noise& noise, glm::vec3 position) : position(position) {
         //HEIGHT-MAP-INIT
@@ -47,8 +46,8 @@ namespace Voxel::Game {
 
     void ChunkCompound::unload() {
         //UNLOADING
-        // for (const auto& chunk : chunks) {
-        //     chunk->unload();
-        // }
+        for (const auto& chunk : chunks) {
+            chunk->unload();
+        }
     }
 }

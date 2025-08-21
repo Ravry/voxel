@@ -1,5 +1,6 @@
 #include "game/renderer.h"
 
+
 namespace Voxel::Game {
     static bool debug {false};
 
@@ -57,7 +58,7 @@ namespace Voxel::Game {
         msaa_framebuffer->attach(&framebuffer_depth_stencil_attachment_multisampled);
 
         if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            LOG("error -> framebuffer error: {}", std::to_string(status).c_str());
+            plog_error("error -> framebuffer error: {}", std::to_string(status).c_str());
 
         msaa_framebuffer->unbind();
     }
@@ -81,7 +82,7 @@ namespace Voxel::Game {
         intermediate_framebuffer->attach(&framebuffer_color_attachment);
 
         if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            LOG("error -> framebuffer error: {}", std::to_string(status).c_str());
+            plog_error("error -> framebuffer error: {}", std::to_string(status).c_str());
 
         intermediate_framebuffer->unbind();
     }
@@ -111,7 +112,7 @@ namespace Voxel::Game {
         shadow_map_fbo->attach(&framebuffer_shadow_map_attachment);
 
         if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            LOG("error -> framebuffer error: {}", std::to_string(status).c_str());
+            plog_error("error -> framebuffer error: {}", std::to_string(status).c_str());
 
         shadow_map_fbo->unbind();
     }
@@ -355,7 +356,7 @@ namespace Voxel::Game {
         if (Input::is_key_pressed(GLFW_KEY_R)) {
             for (auto& shader : ResourceManager::get_storage<Shader>()) {
                 shader.second->reload();
-                LOG("{} reloaded ...", shader.first);
+                plog_error("{} reloaded ...", shader.first);
             }
         }
     }

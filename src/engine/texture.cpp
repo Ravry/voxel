@@ -95,7 +95,7 @@ namespace Voxel {
 
     Texture::~Texture() {
         glDeleteTextures(1, &id);
-        LOG("Texture::~Texture()[{}]", id);
+        plog("Texture::~Texture()[{}]", id);
     }
 
     void Texture::bind() {

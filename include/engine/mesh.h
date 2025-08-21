@@ -53,7 +53,7 @@ namespace Voxel {
 
         JPH::Shape::ShapeResult result = meshSettings.Create();
         if (result.HasError()) {
-            LOG("Failed to create mesh shape: {}", result.GetError().c_str());
+            plog_error("Failed to create mesh shape: {}", result.GetError().c_str());
             return nullptr;
         }
 

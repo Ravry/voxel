@@ -5,41 +5,41 @@ namespace Voxel {
     {
         if(id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
 
-        LOG("======================");
+        plog("======================");
 
-        LOG("DEBUG: ({}): {}", id, message);
+        plog("DEBUG: ({}): {}", id, message);
         switch (source)
         {
-            case GL_DEBUG_SOURCE_API:             LOG("Source: API"); break;
-            case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   LOG("Source: Window System"); break;
-            case GL_DEBUG_SOURCE_SHADER_COMPILER: LOG("Source: Shader Compiler"); break;
-            case GL_DEBUG_SOURCE_THIRD_PARTY:     LOG("Source: Third Party"); break;
-            case GL_DEBUG_SOURCE_APPLICATION:     LOG("Source: Application"); break;
-            case GL_DEBUG_SOURCE_OTHER:           LOG("Source: Other"); break;
+            case GL_DEBUG_SOURCE_API:             plog("Source: API"); break;
+            case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   plog("Source: Window System"); break;
+            case GL_DEBUG_SOURCE_SHADER_COMPILER: plog("Source: Shader Compiler"); break;
+            case GL_DEBUG_SOURCE_THIRD_PARTY:     plog("Source: Third Party"); break;
+            case GL_DEBUG_SOURCE_APPLICATION:     plog("Source: Application"); break;
+            case GL_DEBUG_SOURCE_OTHER:           plog("Source: Other"); break;
         }
 
         switch (type)
         {
-            case GL_DEBUG_TYPE_ERROR:               LOG("Type: Error"); break;
-            case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: LOG("Type: Deprecated Behaviour"); break;
-            case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  LOG("Type: Undefined Behaviour"); break;
-            case GL_DEBUG_TYPE_PORTABILITY:         LOG("Type: Portability"); break;
-            case GL_DEBUG_TYPE_PERFORMANCE:         LOG("Type: Performance"); break;
-            case GL_DEBUG_TYPE_MARKER:              LOG("Type: Marker"); break;
-            case GL_DEBUG_TYPE_PUSH_GROUP:          LOG("Type: Push Group"); break;
-            case GL_DEBUG_TYPE_POP_GROUP:           LOG("Type: Pop Group"); break;
-            case GL_DEBUG_TYPE_OTHER:               LOG("Type: Other"); break;
+            case GL_DEBUG_TYPE_ERROR:               plog("Type: Error"); break;
+            case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: plog("Type: Deprecated Behaviour"); break;
+            case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  plog("Type: Undefined Behaviour"); break;
+            case GL_DEBUG_TYPE_PORTABILITY:         plog("Type: Portability"); break;
+            case GL_DEBUG_TYPE_PERFORMANCE:         plog("Type: Performance"); break;
+            case GL_DEBUG_TYPE_MARKER:              plog("Type: Marker"); break;
+            case GL_DEBUG_TYPE_PUSH_GROUP:          plog("Type: Push Group"); break;
+            case GL_DEBUG_TYPE_POP_GROUP:           plog("Type: Pop Group"); break;
+            case GL_DEBUG_TYPE_OTHER:               plog("Type: Other"); break;
         }
 
         switch (severity)
         {
-            case GL_DEBUG_SEVERITY_HIGH:         LOG("Severity: high"); break;
-            case GL_DEBUG_SEVERITY_MEDIUM:       LOG("Severity: medium"); break;
-            case GL_DEBUG_SEVERITY_LOW:          LOG("Severity: low"); break;
-            case GL_DEBUG_SEVERITY_NOTIFICATION: LOG("Severity: notification"); break;
+            case GL_DEBUG_SEVERITY_HIGH:         plog("Severity: high"); break;
+            case GL_DEBUG_SEVERITY_MEDIUM:       plog("Severity: medium"); break;
+            case GL_DEBUG_SEVERITY_LOW:          plog("Severity: low"); break;
+            case GL_DEBUG_SEVERITY_NOTIFICATION: plog("Severity: notification"); break;
         }
 
-        LOG("======================");
+        plog("======================");
     }
 
     Window::Window(int width, int height, std::string_view title)
@@ -83,9 +83,9 @@ namespace Voxel {
             // renderer->refactor(width, height);
         });
 
-        LOG("renderer: {}"  ,   (const char*)glGetString(GL_RENDERER));
-        LOG("vendor: {}"    ,   (const char*)glGetString(GL_VENDOR));
-        LOG("version: {}"   ,   (const char*)glGetString(GL_VERSION));
+        plog("renderer: {}"  ,   (const char*)glGetString(GL_RENDERER));
+        plog("vendor: {}"    ,   (const char*)glGetString(GL_VENDOR));
+        plog("version: {}"   ,   (const char*)glGetString(GL_VERSION));
 
         renderer = std::make_unique<Game::Renderer>(window, width, height);
     }

@@ -7,7 +7,7 @@ namespace Voxel {
         if (!success) {
             char info_log[512];
             glGetShaderInfoLog(shader, 512, NULL, info_log);
-            LOG("ERROR::SHADER::COMPILATION_FAILED");
+            plog_error("ERROR::SHADER::COMPILATION_FAILED");
         }
     }
 
@@ -43,7 +43,7 @@ namespace Voxel {
 
                 shaders.push_back(shader);
             } catch (std::ios_base::failure &e) {
-                LOG("ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ");
+                plog_error("ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ");
                 return;
             }
         }
@@ -54,7 +54,7 @@ namespace Voxel {
         if (!success) {
             char infoLog[1024];
             glGetProgramInfoLog(id, 1024, nullptr, infoLog);
-            LOG("SHADER LINK ERROR: {}", infoLog);
+            plog_error("SHADER LINK ERROR: {}", infoLog);
         }
 
         for (auto &shader: shaders) {

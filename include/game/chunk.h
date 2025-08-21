@@ -2,6 +2,7 @@
 #include <memory>
 #include <unordered_map>
 #include <glm/glm.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
 #include "engine/resource_manager.h"
 #include "engine/buffer.h"

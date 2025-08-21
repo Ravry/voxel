@@ -64,7 +64,7 @@ namespace Voxel {
         );
 
         if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-            LOG("error loading model: {}", importer.GetErrorString());
+            plog_error("error loading model: {}", importer.GetErrorString());
             return;
         }
 
