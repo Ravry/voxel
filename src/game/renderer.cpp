@@ -206,6 +206,16 @@ namespace Voxel::Game {
             );
         }
 
+        //PHYSICS-INIT
+        {
+            physics_manager = &Physics::PhysicsManager::get_instance();
+            physics_manager->physics_subscribers.push_back(
+                [this]() {
+                    this->camera->fixed_update();
+                }
+            );
+        }
+
         //GENERAL-INIT
         {
             camera = &ResourceManager::create_resource<Camera>("camera_game", width, height, glm::vec3(0, 64, 0));
@@ -230,16 +240,6 @@ namespace Voxel::Game {
                 },
                 material_pig.get(),
                 glm::vec3(0.f, 60.f, 0.f)
-            );
-        }
-
-        //PHYSICS-INIT
-        {
-            physics_manager = &Physics::PhysicsManager::get_instance();
-            physics_manager->physics_subscribers.push_back(
-                [this]() {
-                    this->camera->fixed_update();
-                }
             );
         }
 
@@ -345,8 +345,7 @@ namespace Voxel::Game {
     }
 
     void Renderer::update(float delta_time) {
-        float lerp_t {1.f};
-        physics_manager ->update(lerp_t);
+        physics_manager ->update();
         chunk_manager   ->update(camera->position);
         camera          ->update(delta_time);
         directional_light.update(camera);

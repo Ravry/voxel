@@ -3,99 +3,7 @@
 #include "Jolt/Physics/Body/BodyLockMulti.h"
 #include <stack>
 
-namespace {
-    class BasicObjectLayerVsObjectLayerFilter : public ObjectLayerPairFilter
-    {
-    public:
-        virtual bool ShouldCollide(ObjectLayer object_a, ObjectLayer object_b) const override {
-            switch (object_a)
-            {
-                case PhysicsLayers::NON_MOVING:
-                    return object_b == PhysicsLayers::MOVING;
-                case PhysicsLayers::MOVING:
-                    return true;
-                default:
-                    plog_error("invalid phase");
-                    return false;
-            }
-        }
-    };
-
-    namespace BroadPhaseLayers {
-        static constexpr BroadPhaseLayer NON_MOVING(0);
-        static constexpr BroadPhaseLayer MOVING(1);
-        static constexpr uint NUM_LAYERS(2);
-    };
-
-    class BasicBroadPhaseLayerInterface final : public BroadPhaseLayerInterface
-    {
-    public:
-        BasicBroadPhaseLayerInterface() {
-            mObjectToBroadPhase[PhysicsLayers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
-            mObjectToBroadPhase[PhysicsLayers::MOVING] = BroadPhaseLayers::MOVING;
-        }
-
-        virtual uint GetNumBroadPhaseLayers() const override {
-            return BroadPhaseLayers::NUM_LAYERS;
-        }
-
-        virtual BroadPhaseLayer GetBroadPhaseLayer(ObjectLayer inLayer) const override {
-            JPH_ASSERT(inLayer < PhysicsLayers::NUM_LAYERS);
-            return mObjectToBroadPhase[inLayer];
-        }
-
-        #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
-        virtual const char* GetBroadPhaseLayerName(BroadPhaseLayer inLayer) const override {
-            switch ((BroadPhaseLayer::Type)inLayer) {
-                case (BroadPhaseLayer::Type)BroadPhaseLayers::NON_MOVING:
-                    return "NON_MOVING";
-                case (BroadPhaseLayer::Type)BroadPhaseLayers::MOVING:
-                    return "MOVING";
-                default:
-                    return "INVALID";
-            }
-        }
-        #endif
-
-    private:
-        BroadPhaseLayer mObjectToBroadPhase[PhysicsLayers::NUM_LAYERS];
-    };
-
-    class BasicObjectVsBroadPhaseLayerFilter : public ObjectVsBroadPhaseLayerFilter
-    {
-    public:
-        virtual bool ShouldCollide(ObjectLayer inLayer1, BroadPhaseLayer inLayer2) const override {
-            switch (inLayer1) {
-                case PhysicsLayers::NON_MOVING:
-                    return inLayer2 == BroadPhaseLayers::MOVING;
-                case PhysicsLayers::MOVING:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-    };
-
-    constexpr uint cMaxBodies = { 1024 };
-    constexpr uint cNumBodyMutexes = { 0 };
-    constexpr uint cMaxBodyPairs = { 1024 };
-    constexpr uint cMaxContactConstraints { 1024 };
-    constexpr float cDeltaTime { 1.0f / 60.0f };
-    constexpr int cCollisionSteps = 1;
-}
-
 namespace Voxel::Physics {
-    struct PhysicsManager::implementation {
-        BasicBroadPhaseLayerInterface broad_phase_layer_interface;
-        BasicObjectVsBroadPhaseLayerFilter object_vs_broadphase_layer_filter;
-        BasicObjectLayerVsObjectLayerFilter object_vs_object_layer_filter;
-        PhysicsSystem physics_system;
-        TempAllocatorImpl temp_allocator{10 * 1024 * 1024};
-        JobSystemThreadPool job_system{ cMaxPhysicsJobs, cMaxPhysicsBarriers, static_cast<int>(thread::hardware_concurrency() - 1)};
-        BodyInterface* body_interface_ptr;
-        BodyID sphere_id;
-    };
-
     void trace_implementation(const char *inFMT, ...) {
         va_list list;
         va_start(list, inFMT);
@@ -156,34 +64,27 @@ namespace Voxel::Physics {
         UnregisterTypes();
     }
 
-
-    void PhysicsManager::add_body(BodyCreationSettings& settings, unsigned int& slot) {
+    Body* PhysicsManager::add_body(BodyCreationSettings& settings, unsigned int& slot) {
         static unsigned int c_slot = 0;
         slot = c_slot++;
         auto& body_interface = m_implementation->physics_system.GetBodyInterface();
-        BodyCreationSettings _settings(
-            new SphereShape(.5f),
-            Vec3(0, 0, 0),
-            Quat::sIdentity(),
-            EMotionType::Static,
-            PhysicsLayers::NON_MOVING
-        );
         Body* body = body_interface.CreateBody(settings);
         body_interface.AddBody(body->GetID(), EActivation::DontActivate);
         bodies_map[slot] = body;
+        return body;
     }
 
     void PhysicsManager::remove_body(unsigned int slot) {
         auto body = bodies_map[slot];
         if (!body) return;
-        // if (body->GetID().IsInvalid()) return;
+        if (body->GetID().IsInvalid()) return;
         auto& body_interface = m_implementation->physics_system.GetBodyInterface();
         body_interface.RemoveBody(body->GetID());
         body_interface.DestroyBody(body->GetID());
         bodies_map.erase(slot);
     }
 
-    bool PhysicsManager::update(float& lerp_t) {
+    bool PhysicsManager::update() {
         static float accumulator {0.f};
         accumulator += Time::delta_time;
 
