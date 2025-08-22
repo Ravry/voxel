@@ -47,6 +47,7 @@ namespace Voxel {
             bool allocated {false};
             unsigned int slot {0};
             unsigned int slot_physics {0};
+            bool affected_by_physics {false};
 
             JPH::Ref<JPH::Shape> shape;
 

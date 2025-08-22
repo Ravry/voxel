@@ -1,3 +1,4 @@
+#include "core/window.h"
 #include "engine/camera.h"
 #include "core/log.h"
 
@@ -8,49 +9,44 @@ namespace Voxel {
         projection = glm::perspective(glm::radians(60.f), width/height, .1f, 1000.f);
     }
 
-    void Camera::update(GLFWwindow* window, float delta_time) {
+    static glm::vec3 physics_dst_pos;
+    static glm::vec3 physics_src_pos;
+
+    void Camera::update(float delta_time) {
+        input = glm::vec3(0.f);
+
         if (Input::is_key_pressed(GLFW_KEY_ESCAPE)) {
             cursor_enabled = true;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            Window::instance->set_cursor_mode(GLFW_CURSOR_NORMAL);
         }
-
         if (Input::is_key_pressed(GLFW_MOUSE_BUTTON_2)) {
             cursor_enabled = false;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            Window::instance->set_cursor_mode(GLFW_CURSOR_DISABLED);
         }
 
-        if (cursor_enabled)
-            return;
+        if (cursor_enabled) return;
 
-        glm::vec3 input = glm::vec3(0.f);
-        if (glfwGetKey(window, GLFW_KEY_W)) {
+        if (Input::is_key_held_down(GLFW_KEY_W)) {
             input.z += 1; 
         }
-        if (glfwGetKey(window, GLFW_KEY_S)) {
+        if (Input::is_key_held_down(GLFW_KEY_S)) {
             input.z -= 1; 
         }
-        
-        if (glfwGetKey(window, GLFW_KEY_A)) {
+        if (Input::is_key_held_down(GLFW_KEY_A)) {
             input.x -= 1; 
         }
-        if (glfwGetKey(window, GLFW_KEY_D)) {
+        if (Input::is_key_held_down(GLFW_KEY_D)) {
             input.x += 1; 
         }
-        
-        if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+        if (Input::is_key_held_down(GLFW_KEY_SPACE)) {
             input.y += 1; 
         }
-        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) {
+        if (Input::is_key_held_down(GLFW_KEY_LEFT_CONTROL)) {
             input.y -= 1; 
         }
+        if (Input::is_key_held_down(GLFW_KEY_LEFT_SHIFT)) {speed_multiplier = 4.f;} else {speed_multiplier = 1.f;};
 
-        matrix = glm::translate(matrix, input);
-
-        speed_multiplier = Input::is_key_held_down(GLFW_KEY_LEFT_SHIFT) ? 4.f : 1.f;
-
-        if (glm::length(input) > 0) {
-            input = glm::normalize(input);
-        }
+        if (glm::length(input) > 0) input = glm::normalize(input);
 
         yaw += Input::delta_x;
         pitch -= Input::delta_y;
@@ -63,11 +59,21 @@ namespace Voxel {
         glm::vec3 cameraUp = glm::vec3(0, 1, 0);
         glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, cameraUp));
 
-        glm::vec3 move = (input.z * cameraFront + input.y * cameraUp + input.x * cameraRight) * ((float)delta_time * speed * speed_multiplier);
-        position += move; 
-
         matrix = glm::lookAt(position, position + cameraFront, cameraUp);
         get_frustum(frustum, projection, matrix);
+    }
+
+    void Camera::fixed_update() {
+        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front.y = sin(glm::radians(pitch));
+        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        glm::vec3 cameraFront = glm::normalize(front);
+        glm::vec3 cameraUp = glm::vec3(0, 1, 0);
+        glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, cameraUp));
+
+        glm::vec3 move = (input.z * cameraFront + input.y * cameraUp + input.x * cameraRight) * ((float)1.f/60.f * speed * speed_multiplier);
+        position += move;
+        matrix = glm::lookAt(position, position + cameraFront, cameraUp);
     }
 
     void Camera::refactor(float width, float height) {

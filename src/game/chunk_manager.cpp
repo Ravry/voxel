@@ -32,7 +32,7 @@ namespace Voxel::Game {
 
     static Noise noise;
 
-    int ChunkManager::chunk_render_distance {12};
+    int ChunkManager::chunk_render_distance {8};
 
     void ChunkManager::worker_func() {
         const int render_distance_squared = chunk_render_distance * chunk_render_distance;

@@ -134,14 +134,16 @@ namespace Voxel::Game {
     }
 
     void Chunk::build_mesh() {
-        if (built) return;
+        if (built) {
+            if (!affected_by_physics) load();
+            return;
+        }
 
         std::vector<uint16_t*> neighbours {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
         if (!find_neighbours(neighbours)) return;
 
         mesh = std::make_unique<Mesh<uint32_t>>(voxels, neighbours.data(), SIZE, shape);
         built = true;
-
         load();
     }
 
@@ -204,6 +206,7 @@ namespace Voxel::Game {
         if (mesh->vertices.size() == 0) return;
         BodyCreationSettings settings(shape, Vec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Static, PhysicsLayers::NON_MOVING);
         Physics::PhysicsManager::get_instance().add_body(settings, slot_physics);
+        affected_by_physics = true;
     }
 
     void Chunk::unload() {
@@ -213,5 +216,6 @@ namespace Voxel::Game {
 
         if (mesh->vertices.size() == 0) return;
         Physics::PhysicsManager::get_instance().remove_body(slot_physics);
+        affected_by_physics = false;
     }
 }

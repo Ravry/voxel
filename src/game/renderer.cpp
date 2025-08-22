@@ -1,5 +1,7 @@
 #include "game/renderer.h"
 
+#include "glm/gtc/type_ptr.hpp"
+
 
 namespace Voxel::Game {
     static bool debug {false};
@@ -118,11 +120,6 @@ namespace Voxel::Game {
     }
 
     Renderer::Renderer(GLFWwindow* window, float width, float height) : width(width), height(height) {
-        //PHYSICS-INIT
-        {
-            physics_manager = &Physics::PhysicsManager::get_instance();
-        }
-
         //IMGUI-INIT
         {
             IMGUI_CHECKVERSION();
@@ -236,6 +233,16 @@ namespace Voxel::Game {
             );
         }
 
+        //PHYSICS-INIT
+        {
+            physics_manager = &Physics::PhysicsManager::get_instance();
+            physics_manager->physics_subscribers.push_back(
+                [this]() {
+                    this->camera->fixed_update();
+                }
+            );
+        }
+
         //SHADOW-FRAMEBUFFER-INIT
         {
             shadow_map_fbo = std::make_unique<FBO>();
@@ -337,23 +344,14 @@ namespace Voxel::Game {
         }
     }
 
-    void Renderer::update(GLFWwindow* window, float delta_time) {
-
-        static glm::vec3 prev_position {20.f, 100.f, 0.f};
-        static glm::vec3 curr_position {20.f, 100.f, 0.f};
-
+    void Renderer::update(float delta_time) {
         float lerp_t {1.f};
-        physics_manager->update(curr_position, prev_position, lerp_t);
-        glm::mat4& mat = instance_pig->get_matrix();
-        glm::vec3 real_pos = glm::mix(prev_position, curr_position, lerp_t);
-        mat = glm::translate(glm::mat4(1.f), real_pos);
-
-        chunk_manager->update(camera->position);
-        camera->update(window, delta_time);
+        physics_manager ->update(lerp_t);
+        chunk_manager   ->update(camera->position);
+        camera          ->update(delta_time);
         directional_light.update(camera);
 
         if (Input::is_key_pressed(GLFW_KEY_X)) debug = !debug;
-
         if (Input::is_key_pressed(GLFW_KEY_R)) {
             for (auto& shader : ResourceManager::get_storage<Shader>()) {
                 shader.second->reload();
@@ -366,58 +364,53 @@ namespace Voxel::Game {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-
         ImGui::SetNextWindowBgAlpha(0.3f);
 
         ImGui::Begin("miscellaneous");
-
-        if (ImGui::CollapsingHeader("information", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::Text((std::to_string(1./Time::delta_time) + std::string(" fps (") + std::to_string(Time::delta_time * 1000.) + std::string(" ms)")).c_str());
-            ImGui::Text(std::format("cam: x={:.2f}; y={:.2f}; z={:.2f}", camera->position.x, camera->position.y, camera->position.z).c_str());
-        }
-
-        if (ImGui::CollapsingHeader("physics", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::Text("physics powered by jolt-physics");
-        }
-
-        if (ImGui::CollapsingHeader("textures")) {
-            static std::string current_item = TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT;
-            static std::unordered_map<std::string, void*> framebuffer_textures {
-                { TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2).get_id()) },
-                { TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT).get_id()) },
-            };
-
-            if (ImGui::BeginCombo("##combo", current_item.c_str())) {
-                for (auto& [str, id] : framebuffer_textures) {
-                    bool is_selected = (current_item == str);
-                    if (ImGui::Selectable(str.c_str(), is_selected)) current_item = str;
-                    if (is_selected) ImGui::SetItemDefaultFocus();
-                }
-                ImGui::EndCombo();
+        {
+            if (ImGui::CollapsingHeader("information", ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::Text((std::to_string(1./Time::delta_time) + std::string(" fps (") + std::to_string(Time::delta_time * 1000.) + std::string(" ms)")).c_str());
+                ImGui::Text(std::format("cam: x={:.2f}; y={:.2f}; z={:.2f}", camera->position.x, camera->position.y, camera->position.z).c_str());
             }
+            if (ImGui::CollapsingHeader("physics", ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::Text("physics powered by jolt-physics");
+            }
+            if (ImGui::CollapsingHeader("textures")) {
+                static std::string current_item = TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT;
+                static std::unordered_map<std::string, void*> framebuffer_textures {
+                    { TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_COLOR_ATTACHMENT2).get_id()) },
+                    { TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT, (void*)(intptr_t)(ResourceManager::get_resource<Texture>(TEXTURE_FRAMEBUFFER_SHADOW_MAP_ATTACHMENT).get_id()) },
+                };
 
-            ImGui::Image(framebuffer_textures[current_item], ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+                if (ImGui::BeginCombo("##combo", current_item.c_str())) {
+                    for (auto& [str, id] : framebuffer_textures) {
+                        bool is_selected = (current_item == str);
+                        if (ImGui::Selectable(str.c_str(), is_selected)) current_item = str;
+                        if (is_selected) ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+
+                ImGui::Image(framebuffer_textures[current_item], ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+            }
+            if (ImGui::CollapsingHeader("lights")) {}
+            if (ImGui::CollapsingHeader("chunk-system", ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::Checkbox("show_gizmos", &Gizmo::show_gizmos);
+                ImGui::Text(
+                    std::format(
+                        "{} MB/Chunk\n"
+                        "{} MB/ChunkCompound\n"
+                        "memory: {} MB",
+                        (sizeof(Chunk)/1000000.f),
+                        (sizeof(ChunkCompound)/1000000.f),
+                        (
+                            (ChunkManager::num_chunks * NUM_CHUNKS_PER_COMPOUND * sizeof(Chunk)) +
+                            (ChunkManager::num_chunks * sizeof(ChunkCompound))
+                        ) / 1000000.f
+                    ).c_str()
+                );
+            }
         }
-
-        if (ImGui::CollapsingHeader("lights")) {}
-
-        if (ImGui::CollapsingHeader("chunk-system", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::Checkbox("show_gizmos", &Gizmo::show_gizmos);
-            ImGui::Text(
-                std::format(
-                    "{} MB/Chunk\n"
-                    "{} MB/ChunkCompound\n"
-                    "memory: {} MB",
-                    (sizeof(Chunk)/1000000.f),
-                    (sizeof(ChunkCompound)/1000000.f),
-                    (
-                        (ChunkManager::num_chunks * NUM_CHUNKS_PER_COMPOUND * sizeof(Chunk)) +
-                        (ChunkManager::num_chunks * sizeof(ChunkCompound))
-                    ) / 1000000.f
-                ).c_str()
-            );
-        }
-
         ImGui::End();
 
         ImGui::Render();

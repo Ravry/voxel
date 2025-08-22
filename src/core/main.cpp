@@ -3,7 +3,6 @@
 using namespace Voxel;
 
 int main() {
-    Window window(1536, 864, "");
-    window.run();
+    Window::create_window(1536, 864, "").run();
     return 0;
 }

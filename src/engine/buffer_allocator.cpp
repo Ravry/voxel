@@ -2,7 +2,6 @@
 
 namespace Voxel {
     BufferAllocator::BufferAllocator() {
-
         glGenVertexArrays(MAX_OBJECTS, vertex_array_objects.data());
         glGenBuffers(MAX_OBJECTS, vbo_ids.data());
         glGenBuffers(MAX_OBJECTS, ebo_ids.data());

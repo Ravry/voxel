@@ -42,6 +42,8 @@ namespace Voxel {
         plog("======================");
     }
 
+    std::unique_ptr<Window> Window::instance {nullptr};
+
     Window::Window(int width, int height, std::string_view title)
     {
         if (!glfwInit()) return;
@@ -113,11 +115,17 @@ namespace Voxel {
             Input::update();
             glfwPollEvents();
 
-            renderer->update(window, Time::delta_time);
+            renderer->update(Time::delta_time);
             renderer->render();
+
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
             glfwSwapBuffers(window);
         }
     }
+
+    void Window::set_cursor_mode(GLenum mode) {
+        glfwSetInputMode(window, GLFW_CURSOR, mode);
+    }
+
 }

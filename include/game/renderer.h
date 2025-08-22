@@ -22,7 +22,7 @@ namespace Voxel::Game {
     class Renderer {
     public:
         Renderer(GLFWwindow* window, float width, float height);
-        void update(GLFWwindow* window, float delta_time);
+        void update(float delta_time);
         void draw_imgui_stuff();
         void render();
         void refactor(int width, int height);

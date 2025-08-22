@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdarg>
 #include <queue>
+#include <functional>
 #include <Jolt/Jolt.h>
 #include <Jolt/RegisterTypes.h>
 #include <Jolt/Core/Factory.h>
@@ -43,8 +44,9 @@ namespace Voxel::Physics {
 
         void add_body(BodyCreationSettings& settings, unsigned int& slot);
         void remove_body(unsigned int slot);
-        void commit_changes();
-        bool update(glm::vec3& position, glm::vec3& prev_position, float& lerp_t);
+        bool update(float& lerp_t);
+
+        std::vector<std::function<void()>> physics_subscribers;
     private:
         struct implementation;
         std::unique_ptr<implementation> m_implementation;

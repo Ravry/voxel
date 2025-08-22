@@ -1,7 +1,6 @@
 #pragma once
 #include "engine/transform.h"
 #include "engine/input.h"
-
 #include <algorithm>
 #include <GLFW/glfw3.h>
 
@@ -97,6 +96,7 @@ namespace Voxel {
             glm::mat4 projection;
             float speed {8.f};
             float speed_multiplier {1.f};
+            glm::vec3 input;
 
         public:
             Plane frustum[6];
@@ -104,7 +104,8 @@ namespace Voxel {
             glm::vec3 front;
         public:
             Camera(float width, float height, glm::vec3 position);
-            void update(GLFWwindow* window, float delta_time);
+            void update(float delta_time);
+            void fixed_update();
             void refactor(float width, float height);
             glm::mat4 get_projection() { return projection; }
     };
