@@ -1,12 +1,8 @@
 #include "engine/physics_manager.h"
 
+#include "Jolt/Physics/Body/BodyLockMulti.h"
+#include <stack>
 namespace {
-    namespace PhysicsLayers {
-        static constexpr ObjectLayer NON_MOVING = 0;
-        static constexpr ObjectLayer MOVING = 1;
-        static constexpr ObjectLayer NUM_LAYERS = 2;
-    }
-
     class BasicObjectLayerVsObjectLayerFilter : public ObjectLayerPairFilter
     {
     public:
@@ -79,10 +75,10 @@ namespace {
         }
     };
 
-    constexpr uint cMaxBodies = { 1024 };
+    constexpr uint cMaxBodies = { 65536 };
     constexpr uint cNumBodyMutexes = { 0 };
-    constexpr uint cMaxBodyPairs = { 1024 };
-    constexpr uint cMaxContactConstraints { 1024 };
+    constexpr uint cMaxBodyPairs = { 65536 };
+    constexpr uint cMaxContactConstraints { 65536 };
     constexpr float cDeltaTime { 1.0f / 60.0f };
 }
 
@@ -92,7 +88,7 @@ namespace Voxel::Physics {
         BasicObjectVsBroadPhaseLayerFilter object_vs_broadphase_layer_filter;
         BasicObjectLayerVsObjectLayerFilter object_vs_object_layer_filter;
         PhysicsSystem physics_system;
-        TempAllocatorImpl temp_allocator{10 * 1024 * 1024};
+        TempAllocatorImpl temp_allocator{256 * 1024 * 1024};
         JobSystemThreadPool job_system{ cMaxPhysicsJobs, cMaxPhysicsBarriers, static_cast<int>(thread::hardware_concurrency() - 1)};
         BodyInterface* body_interface_ptr;
         BodyID sphere_id;
@@ -149,8 +145,52 @@ namespace Voxel::Physics {
         UnregisterTypes();
     }
 
-    void PhysicsManager::add_body(JPH::BodyID& body_id) {
+    struct item {
+        BodyCreationSettings settings;
+        unsigned int slot;
+    };
 
+    // std::unordered_map<unsigned int, Body*> bodies_map;
+    // static unsigned int c_slot = 0;
+
+    static std::stack<Body*> bodies_queue;
+
+    void PhysicsManager::add_body(BodyCreationSettings& settings, unsigned int& slot) {
+        // slot = c_slot++;
+        auto& body_interface = m_implementation->physics_system.GetBodyInterface();
+        BodyCreationSettings _settings(
+            new SphereShape(.5f),
+            Vec3(0, 0, 0),
+            Quat::sIdentity(),
+            EMotionType::Static,
+            PhysicsLayers::NON_MOVING
+        );
+        Body* body = body_interface.CreateBody(settings);
+        body_interface.AddBody(body->GetID(), EActivation::DontActivate);
+        bodies_queue.push(body);
+
+        if (bodies_queue.size() > 5000) {
+            auto _body = bodies_queue.top();
+            bodies_queue.pop();
+            body_interface.RemoveBody(_body->GetID());
+            body_interface.DestroyBody(_body->GetID());
+        }
+
+        plog("num_bodies: {}", bodies_queue.size());
+
+    }
+
+    void PhysicsManager::remove_body(unsigned int slot) {
+        // auto body = bodies_map[slot];
+        // auto& body_interface = m_implementation->physics_system.GetBodyInterface();
+        // body_interface.RemoveBody(body->GetID());
+        // body_interface.DestroyBody(body->GetID());
+        // bodies_map.erase(slot);
+        // plog("chunk unloaded");
+        // plog("bodies_count: {}", bodies_map.size());
+    }
+
+    void PhysicsManager::commit_changes() {
     }
 
     bool PhysicsManager::update(glm::vec3& position, glm::vec3& prev_position, float& lerp_t) {
@@ -162,6 +202,8 @@ namespace Voxel::Physics {
         accumulator += Time::delta_time;
 
         while (accumulator >= cDeltaTime) {
+            commit_changes();
+
             if (!activate_physics) {
                 accumulator = 0.f;
                 return false;

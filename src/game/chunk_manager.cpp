@@ -71,7 +71,6 @@ namespace Voxel::Game {
 
             for (auto& [_, chunk] : _chunks_new) {
                 chunk->build_chunk_meshes();
-
             }
 
             {

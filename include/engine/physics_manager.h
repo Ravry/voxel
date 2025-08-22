@@ -22,6 +22,14 @@ JPH_SUPPRESS_WARNINGS
 using namespace JPH;
 using namespace JPH::literals;
 
+namespace {
+    namespace PhysicsLayers {
+        static constexpr ObjectLayer NON_MOVING = 0;
+        static constexpr ObjectLayer MOVING = 1;
+        static constexpr ObjectLayer NUM_LAYERS = 2;
+    }
+}
+
 namespace Voxel::Physics {
     class PhysicsManager {
     public:
@@ -33,9 +41,10 @@ namespace Voxel::Physics {
         PhysicsManager();
         ~PhysicsManager();
 
-        void add_body(JPH::BodyID& body_id);
+        void add_body(BodyCreationSettings& settings, unsigned int& slot);
+        void remove_body(unsigned int slot);
+        void commit_changes();
         bool update(glm::vec3& position, glm::vec3& prev_position, float& lerp_t);
-
     private:
         struct implementation;
         std::unique_ptr<implementation> m_implementation;

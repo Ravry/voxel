@@ -23,6 +23,8 @@ namespace Voxel {
             Chunk(int* height_map, unsigned int* block_types, std::vector<glm::ivec2>& tree_positions, Noise& noise, glm::ivec3 position);
             void build_mesh();
             void render(Shader& shader);
+
+            void load();
             void unload();
 
         private:
@@ -44,9 +46,10 @@ namespace Voxel {
             bool built {false};
             bool allocated {false};
             unsigned int slot {0};
+            unsigned int slot_physics {0};
 
             JPH::Ref<JPH::Shape> shape;
-            JPH::BodyID body_id;
+
         };
     }
 }

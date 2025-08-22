@@ -110,19 +110,19 @@ namespace Voxel::Game {
     bool Chunk::find_neighbours(std::vector<uint16_t*>& neighbours) {
         ChunkPos chunk_left_index {position.x - SIZE, position.y, position.z};
         if (chunks.find(chunk_left_index) != chunks.end()) neighbours[0] = chunks[chunk_left_index]->voxels;
-        else false;
+        else return false;
 
         ChunkPos chunk_right_index { position.x + SIZE, position.y, position.z };
         if (chunks.find(chunk_right_index) != chunks.end()) neighbours[1] = chunks[chunk_right_index]->voxels;
-        else false;
+        else return false;
 
         ChunkPos chunk_front_index { position.x, position.y, position.z - SIZE };
         if (chunks.find(chunk_front_index) != chunks.end()) neighbours[2] = chunks[chunk_front_index]->voxels;
-        else false;
+        else return  false;
 
         ChunkPos chunk_back_index { position.x, position.y, position.z + SIZE };
         if (chunks.find(chunk_back_index) != chunks.end()) neighbours[3] = chunks[chunk_back_index]->voxels;
-        else false;
+        else return false;
 
         ChunkPos chunk_bottom_index { position.x, position.y - SIZE, position.z };
         if (chunks.find(chunk_bottom_index) != chunks.end()) neighbours[4] = chunks[chunk_bottom_index]->voxels;
@@ -142,8 +142,7 @@ namespace Voxel::Game {
         mesh = std::make_unique<Mesh<uint32_t>>(voxels, neighbours.data(), SIZE, shape);
         built = true;
 
-        // if (mesh->vertices.size() == 0) return;
-        // Physics::PhysicsManager::get_instance().add_body_from_shape(shape, body_id, Vec3(position.x, position.y, position.z));
+        load();
     }
 
     void Chunk::generate_trees(Noise& noise, int* height_map, std::vector<glm::ivec2>& tree_positions) {
@@ -199,14 +198,20 @@ namespace Voxel::Game {
         Gizmo::render_line_box_gizmo(position, glm::vec3(16.f));
     }
 
+
+
+    void Chunk::load() {
+        if (mesh->vertices.size() == 0) return;
+        BodyCreationSettings settings(shape, Vec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Static, PhysicsLayers::NON_MOVING);
+        Physics::PhysicsManager::get_instance().add_body(settings, slot_physics);
+    }
+
     void Chunk::unload() {
         if (!allocated) return;
-
-        // if (!body_id.IsInvalid()) {
-        //     Physics::PhysicsManager::get_instance().remove_body(body_id);
-        // }
-
         allocated = false;
         BufferAllocator::getInstance().free_buffer(slot);
+
+        if (mesh->vertices.size() == 0) return;
+        Physics::PhysicsManager::get_instance().remove_body(slot_physics);
     }
 }

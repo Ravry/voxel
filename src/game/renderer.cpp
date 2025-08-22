@@ -338,6 +338,7 @@ namespace Voxel::Game {
     }
 
     void Renderer::update(GLFWwindow* window, float delta_time) {
+
         static glm::vec3 prev_position {20.f, 100.f, 0.f};
         static glm::vec3 curr_position {20.f, 100.f, 0.f};
 
